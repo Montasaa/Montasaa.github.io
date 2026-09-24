@@ -1,0 +1,1350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Agent Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500&family=Barlow+Semi+Condensed:wght@500;600&family=Doto:wght@700;900&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Agent Atlas — single dark visual world by design (signal-orange on warm black). */
+:root{
+  color-scheme:dark;
+  --ground:#0a0908; --panel:#0f0d0c; --surface:#151210; --raised:#1c1815; --hover:#221d19;
+  --line:#28221e; --line-2:#3a322b; --line-3:#51463d;
+  --ink:#ece5dc; --ink-2:#aa9e93; --ink-3:#72675d; --ink-4:#4b433c;
+  --signal:#ff7a1a; --signal-2:#ffa35e; --signal-dim:#8a4312; --signal-wash:rgba(255,122,26,.09);
+  --ok:#7fbf8e; --warn:#e3b04b; --bad:#ef5b4c;
+  --f-body:'Barlow',ui-sans-serif,system-ui,sans-serif;
+  --f-label:'Barlow Semi Condensed','Barlow',ui-sans-serif,system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --f-dot:'Doto','JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font:14px/1.45 var(--f-body);overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:1px solid var(--signal);outline-offset:2px}
+.eyebrow,.lbl{font:600 11px/1 var(--f-label);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.mono{font-family:var(--f-mono)}
+.num{font-variant-numeric:tabular-nums}
+
+#app{display:grid;grid-template-rows:auto 1fr;height:100%}
+
+/* ── top bar ───────────────────────────── */
+.top{display:flex;align-items:center;gap:18px;padding:0 16px;min-height:54px;border-bottom:1px solid var(--line);background:var(--panel);position:relative;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.brand b{font:600 15px/1 var(--f-label);letter-spacing:.32em;text-transform:uppercase}
+.brand span{font:500 11px/1 var(--f-label);letter-spacing:.14em;color:var(--ink-3);text-transform:uppercase}
+.mark{width:18px;height:18px;position:relative}
+.mark i{position:absolute;inset:0;border:1px solid var(--signal);border-radius:50%}
+.mark i+i{inset:6px;background:var(--signal);border:0;box-shadow:0 0 10px var(--signal)}
+.lenses{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--ground)}
+.lenses button{border:0;background:none;padding:6px 12px;border-radius:5px;font:600 12px/1 var(--f-label);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.lenses button:hover{color:var(--ink)}
+.lenses button[aria-pressed="true"]{background:var(--raised);color:var(--ink);box-shadow:inset 0 -1px 0 var(--signal)}
+.spacer{flex:1}
+.search{position:relative}
+.search input{width:190px;background:var(--ground);border:1px solid var(--line);border-radius:7px;padding:7px 10px 7px 28px;font-size:13px}
+.search input::placeholder{color:var(--ink-4)}
+.search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--ink-3)}
+.results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:4px;max-height:320px;overflow:auto;z-index:20}
+.results button{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:0;padding:7px 8px;border-radius:5px;font-size:13px}
+.results button:hover,.results button.on{background:var(--hover)}
+.results em{font:500 10px/1.6 var(--f-label);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-style:normal}
+.scn{display:flex;align-items:center;gap:6px}
+.sel{appearance:none;background:var(--ground) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2372675d' stroke-width='1.3'/%3E%3C/svg%3E") no-repeat right 10px center;border:1px solid var(--line);border-radius:7px;padding:7px 28px 7px 10px;font-size:13px}
+.btn{border:1px solid var(--line-2);background:var(--raised);border-radius:7px;padding:7px 11px;font:600 12px/1 var(--f-label);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.btn:hover{color:var(--ink);border-color:var(--line-3)}
+.btn[aria-pressed="true"]{color:var(--signal-2);border-color:var(--signal-dim);background:var(--signal-wash)}
+.btn.primary{background:var(--signal);border-color:var(--signal);color:#1a0d03}
+.btn.primary:hover{background:var(--signal-2);color:#1a0d03}
+.btn.ghost{background:none}
+.icon-btn{border:1px solid var(--line);background:var(--ground);border-radius:7px;width:32px;height:32px;display:grid;place-items:center;color:var(--ink-2)}
+.only-narrow{display:none}
+
+/* ── main grid ─────────────────────────── */
+.main{display:grid;grid-template-columns:304px minmax(0,1fr) auto;min-height:0;position:relative}
+.brief{border-right:1px solid var(--line);background:var(--panel);overflow:auto;min-height:0}
+.insp{width:372px;border-left:1px solid var(--line);background:var(--panel);overflow:auto;min-height:0}
+.stage{position:relative;overflow:hidden;min-width:0;background:
+  radial-gradient(ellipse 60% 50% at 50% 40%,rgba(255,122,26,.035),transparent 70%),var(--ground)}
+#cv{width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+#cv.panning{cursor:grabbing}
+
+/* ── brief panel ───────────────────────── */
+.b-sec{padding:18px 18px 20px;border-bottom:1px solid var(--line)}
+.b-sec:last-child{border-bottom:0}
+.b-sec>.eyebrow{display:flex;justify-content:space-between;margin-bottom:12px}
+.scn-name{font:600 20px/1.15 var(--f-label);letter-spacing:.02em;margin:0 0 6px;text-wrap:balance}
+.scn-desc{margin:0;color:var(--ink-2);font-size:13px}
+.legend-line{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--ink-2)}
+.legend-line span{display:flex;align-items:center;gap:6px}
+.legend-line i{display:inline-block;width:22px;border-top:1.5px solid var(--line-3)}
+.legend-line i.dash{border-top:1.5px dashed var(--signal-2)}
+.legend-line i.dot{border-top:1.5px dotted var(--ink-3)}
+.next{border:1px solid var(--signal-dim);border-radius:10px;padding:14px;background:linear-gradient(180deg,var(--signal-wash),transparent 80%);position:relative}
+.next h3{margin:0 0 6px;font:600 16px/1.2 var(--f-label);letter-spacing:.02em;text-wrap:balance}
+.next p{margin:0 0 10px;color:var(--ink-2);font-size:13px}
+.next .do{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--signal-2);margin:0}
+.next .do::before{content:"";flex:none;width:6px;height:6px;margin-top:6px;border-radius:50%;background:var(--signal);box-shadow:0 0 8px var(--signal)}
+.next .btn{margin-top:12px}
+.inv{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
+.inv button{display:flex;justify-content:space-between;align-items:baseline;background:none;border:0;padding:5px 6px;margin:0 -6px;border-radius:5px;font-size:13px;color:var(--ink-2);text-align:left}
+.inv button:hover{background:var(--hover);color:var(--ink)}
+.inv button[aria-pressed="true"]{background:var(--signal-wash);color:var(--signal-2)}
+.inv b{font:500 13px var(--f-mono);color:var(--ink)}
+.inv b small{color:var(--signal-2);font-size:11px;margin-left:3px}
+.cost-big{display:flex;align-items:baseline;gap:8px}
+.cost-big .fig{font:900 34px/1 var(--f-dot);color:var(--ink);letter-spacing:.02em}
+.cost-big .per{color:var(--ink-3);font-size:12px}
+.cost-note{margin:8px 0 0;font-size:12.5px;color:var(--ink-2)}
+.cost-note b{color:var(--warn);font-weight:500}
+.find{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.find button{display:grid;grid-template-columns:10px 1fr;gap:10px;width:100%;text-align:left;background:none;border:0;padding:8px 6px;margin:0 -6px;border-radius:6px}
+.find button:hover,.find button[aria-pressed="true"]{background:var(--hover)}
+.find .sq{width:7px;height:7px;margin-top:6px;border-radius:1px}
+.find strong{display:block;font-weight:500;font-size:13px;color:var(--ink)}
+.find span{display:block;font-size:12px;color:var(--ink-3);margin-top:2px}
+.sev-broken{background:var(--bad)} .sev-risk{background:var(--warn)} .sev-gap{background:var(--signal)} .sev-overlap{background:#c9a27e} .sev-idle{background:var(--ink-3)} .sev-unknown{background:transparent;border:1px solid var(--ink-3)}
+.diff{display:grid;gap:12px}
+.diff-row{display:grid;grid-template-columns:64px 1fr;gap:10px;font-size:13px}
+.diff-row>span:first-child{font:600 11px/1.6 var(--f-label);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.diff-row .plus{color:var(--signal-2)} .diff-row .minus{color:var(--bad)}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+
+/* ── inspector ─────────────────────────── */
+.i-head{padding:18px 18px 16px;border-bottom:1px solid var(--line);position:relative}
+.i-close{position:absolute;top:14px;right:14px}
+.i-name{margin:8px 0 8px;font:600 22px/1.15 var(--f-label);letter-spacing:.01em;background:none;border:1px solid transparent;border-radius:6px;padding:2px 4px;margin-left:-5px;width:calc(100% - 36px)}
+input.i-name:hover{border-color:var(--line)} input.i-name:focus{border-color:var(--signal-dim);outline:0}
+.i-sum{margin:8px 0 0;color:var(--ink-2);font-size:13px;max-width:62ch}
+.pill{display:inline-flex;align-items:center;gap:5px;font:600 10.5px/1 var(--f-label);letter-spacing:.1em;text-transform:uppercase;padding:4px 7px;border-radius:4px;border:1px solid var(--line-2);color:var(--ink-2);margin:0 4px 4px 0}
+.pill.stated{color:var(--ink)} .pill.documented{color:#c9b8a6} .pill.inferred{border-style:dotted} .pill.proposed{color:var(--signal-2);border-color:var(--signal-dim);border-style:dashed}
+.pill.removed{color:var(--bad);border-color:rgba(239,91,76,.4)}
+.pill.ok{color:var(--ok);border-color:rgba(127,191,142,.35)} .pill.incomplete,.pill.warn{color:var(--warn);border-color:rgba(227,176,75,.35)} .pill.broken{color:var(--bad);border-color:rgba(239,91,76,.4)}
+.i-sec{padding:16px 18px;border-bottom:1px solid var(--line)}
+.i-sec>.eyebrow{margin-bottom:10px;display:block}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);background:var(--surface);border-radius:5px;padding:4px 8px;font-size:12.5px;color:var(--ink);margin:0 4px 4px 0;max-width:100%}
+.chip:hover{border-color:var(--signal-dim);color:var(--signal-2)}
+.chip.planned{border-style:dashed;border-color:var(--signal-dim)}
+.chip .g{width:12px;height:12px;color:var(--ink-3);flex:none}
+.miss{font-size:12.5px;color:var(--ink-4);font-style:italic}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:13px;margin:0}
+.kv dt{color:var(--ink-3)} .kv dd{margin:0;color:var(--ink)} .kv dd.unk{color:var(--ink-4)}
+
+/* agent context spine */
+.ctx{padding:18px;border-bottom:1px solid var(--line)}
+.ctx-flow{display:grid;grid-template-columns:1fr;gap:0;position:relative}
+.ctx-io{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:start;padding:6px 0}
+.ctx-io .lbl{padding-top:6px}
+.ctx-core{margin:6px 0 6px 92px;padding:12px 14px;border:1px solid var(--signal);border-radius:9px;background:var(--signal-wash);box-shadow:0 0 0 4px rgba(255,122,26,.05),0 0 24px rgba(255,122,26,.08);position:relative}
+.ctx-core::before,.ctx-core::after{content:"";position:absolute;left:22px;width:1px;height:8px;background:var(--signal-dim)}
+.ctx-core::before{top:-8px} .ctx-core::after{bottom:-8px}
+.ctx-core b{display:block;font:600 16px/1.2 var(--f-label)}
+.ctx-core span{font-size:12px;color:var(--ink-2)}
+.stack{list-style:none;margin:14px 0 0;padding:0 0 0 92px;position:relative}
+.stack::before{content:"";position:absolute;left:103px;top:6px;bottom:14px;border-left:1px dashed var(--line-3)}
+.stack li{position:relative;padding:0 0 12px 26px}
+.stack li::before{content:"";position:absolute;left:7px;top:6px;width:7px;height:7px;border-radius:50%;background:var(--ground);border:1px solid var(--line-3)}
+.stack li.ok::before{border-color:var(--signal);background:var(--signal)}
+.stack li.bad::before{border-color:var(--bad)}
+.stack .lbl{display:block;margin-bottom:5px}
+.stack .lbl-side{position:absolute;left:-92px;top:1px;width:84px}
+.fbk{display:block;font-size:12px;color:var(--ink-3);margin-top:2px}
+.verdict{margin-top:6px;padding:10px 12px;border-radius:7px;border:1px solid var(--line-2);font-size:12.5px;color:var(--ink-2)}
+.verdict.ok{border-color:rgba(127,191,142,.3)} .verdict.broken{border-color:rgba(239,91,76,.45);color:#f3b1a9} .verdict.incomplete{border-color:rgba(227,176,75,.35)}
+.verdict b{color:var(--ink);font-weight:500}
+.caps{display:grid;grid-template-columns:92px 1fr;gap:6px 10px;margin-top:14px;align-items:start}
+.caps .lbl{padding-top:6px}
+.duties{margin:0;padding-left:16px;color:var(--ink-2);font-size:13px}
+.duties li{margin:3px 0}
+.note{font-size:12.5px;color:var(--ink-2);margin:0 0 8px;padding-left:12px;border-left:2px solid var(--line-3)}
+.note.risk{border-color:var(--warn)}
+.note a{color:var(--signal-2)}
+.rels{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.rels li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:12.5px;padding:3px 0}
+.rels .verb{font:500 11px var(--f-mono);color:var(--ink-3)}
+.rels .x{border:0;background:none;color:var(--ink-3);padding:2px 6px;border-radius:4px}
+.rels .x:hover{color:var(--bad);background:var(--hover)}
+.rels li.gone{opacity:.5;text-decoration:line-through}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.field{background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:13px;min-width:0}
+.field:focus{border-color:var(--signal-dim);outline:0}
+.hint{font-size:12px;color:var(--ink-3);margin:8px 0 0}
+details.rec summary{cursor:pointer;list-style:none}
+details.rec summary::-webkit-details-marker{display:none}
+details.rec pre{margin:10px 0 0;padding:10px;background:var(--ground);border:1px solid var(--line);border-radius:6px;font:11px/1.5 var(--f-mono);color:var(--ink-2);overflow:auto;max-height:260px}
+
+/* ── stage overlays ────────────────────── */
+.ov{position:absolute;z-index:3}
+.banner{top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:7px 8px 7px 14px;border:1px dashed var(--signal-dim);border-radius:999px;background:rgba(15,13,12,.86);backdrop-filter:blur(6px);font-size:12.5px;color:var(--ink-2);white-space:nowrap;max-width:calc(100% - 32px)}
+.banner b{font:600 11px/1 var(--f-label);letter-spacing:.14em;text-transform:uppercase;color:var(--signal-2)}
+.banner .btn{padding:5px 9px;font-size:11px}
+.econ{top:14px;left:16px;display:flex;gap:22px;padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:rgba(15,13,12,.9)}
+.econ div{display:grid;gap:4px}
+.econ .fig{font:900 22px/1 var(--f-dot)}
+.econ .fig.u{color:var(--warn)}
+.zoom{right:16px;bottom:16px;display:flex;gap:4px}
+.legend{left:16px;bottom:16px;display:flex;gap:6px;align-items:center}
+.src{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:rgba(15,13,12,.9);border-radius:7px;padding:7px 10px;font:600 11px/1 var(--f-label);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.src i{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.pop{position:absolute;left:16px;bottom:58px;width:min(340px,calc(100% - 32px));background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:14px;z-index:6;font-size:13px}
+.pop h4{margin:0 0 10px;font:600 13px/1 var(--f-label);letter-spacing:.1em;text-transform:uppercase}
+.pop ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pop li{display:grid;grid-template-columns:10px 1fr;gap:10px}
+.pop li i{width:6px;height:6px;border-radius:50%;margin-top:6px;border:1px solid var(--ink-3)}
+.pop li i.on{background:var(--ok);border-color:var(--ok)}
+.pop li span{display:block;color:var(--ink-3);font-size:12px}
+.flowbar{left:50%;bottom:16px;transform:translateX(-50%);width:min(980px,calc(100% - 32px));border:1px solid var(--line-2);border-radius:12px;background:rgba(15,13,12,.94);backdrop-filter:blur(8px);padding:12px 14px}
+.fb-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fb-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.fb-tabs button{border:1px solid transparent;background:none;border-radius:6px;padding:5px 9px;font:600 12px/1 var(--f-label);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.fb-tabs button[aria-pressed="true"]{color:var(--ink);border-color:var(--line-2);background:var(--raised)}
+.fb-steps{display:flex;gap:0;margin-top:12px;overflow-x:auto;padding-bottom:2px}
+.step{flex:1 0 108px;min-width:108px;padding:8px 10px 2px;border-top:2px solid var(--line);position:relative;transition:border-color .25s}
+.step .n{font:500 10px var(--f-mono);color:var(--ink-4)}
+.step b{display:block;font:600 13px/1.2 var(--f-label);color:var(--ink-3);margin:3px 0 2px}
+.step span{display:block;font-size:11.5px;line-height:1.35;color:var(--ink-4)}
+.step.done{border-color:var(--signal-dim)} .step.done b{color:var(--ink-2)}
+.step.now{border-color:var(--signal)} .step.now b{color:var(--ink)} .step.now span{color:var(--ink-2)}
+.step.bad{border-color:var(--bad)}
+.fb-res{margin-top:8px;font-size:12.5px;color:var(--ink-2);min-height:18px}
+.fb-res b{color:var(--signal-2);font-weight:500}
+.empty-msg{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;max-width:360px;color:var(--ink-2);font-size:13px}
+.toast{left:50%;top:64px;transform:translateX(-50%);background:var(--surface);border:1px solid var(--line-3);border-radius:8px;padding:9px 14px;font-size:13px;max-width:min(520px,calc(100% - 32px));z-index:9;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast.bad{border-color:rgba(239,91,76,.5)}
+.addmenu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:4px;z-index:20;width:200px}
+.addmenu button{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;padding:7px 8px;border-radius:5px;font-size:13px;text-align:left}
+.addmenu button:hover{background:var(--hover)}
+.addmenu svg{width:14px;height:14px;color:var(--ink-3)}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(5,4,4,.72);z-index:30;display:grid;place-items:center;padding:16px}
+.modal>div{width:min(860px,100%);max-height:90%;overflow:auto;background:var(--panel);border:1px solid var(--line-2);border-radius:12px;padding:22px}
+.modal h2{margin:0 0 6px;font:600 20px/1.2 var(--f-label)}
+.modal p{color:var(--ink-2);font-size:13.5px;max-width:70ch}
+.layers{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.layers div{border:1px solid var(--line-2);border-radius:8px;padding:10px;font-size:12.5px;color:var(--ink-2)}
+.layers b{display:block;font:600 12px/1.3 var(--f-label);letter-spacing:.1em;text-transform:uppercase;color:var(--ink);margin-bottom:4px}
+.modal pre{background:var(--ground);border:1px solid var(--line);border-radius:8px;padding:12px;font:11px/1.5 var(--f-mono);color:var(--ink-2);max-height:320px;overflow:auto}
+
+/* ── SVG canvas ────────────────────────── */
+.lane rect{fill:rgba(255,255,255,.012);stroke:var(--line);stroke-width:1}
+.lane text.t{font:600 12px var(--f-label);letter-spacing:.16em;fill:var(--ink-2);text-transform:uppercase}
+.lane text.c{font:500 11px var(--f-mono);fill:var(--ink-4)}
+.lane text.s{font:400 11.5px var(--f-body);fill:var(--ink-4)}
+.flowhint{stroke:var(--line-2);stroke-width:1;fill:none}
+.zone rect.z{fill:rgba(255,255,255,.015);stroke:var(--line-2)}
+.zone.dashed rect.z{stroke-dasharray:4 5;stroke:var(--line-3);fill:none}
+.zone.host{cursor:pointer}
+.zone.host:hover rect.z{stroke:var(--line-3)}
+.zone.sel rect.z{stroke:var(--signal)}
+.zone text.t{font:600 14px var(--f-label);letter-spacing:.2em;fill:var(--ink)}
+.zone text.s{font:400 11.5px var(--f-body);fill:var(--ink-3)}
+.zone text.e{font:400 12px var(--f-body);fill:var(--ink-4);font-style:italic}
+.zone text.cost{font:900 16px var(--f-dot);fill:var(--ink-2)}
+.zone line{stroke:var(--line-2)}
+
+.edge{fill:none;stroke:var(--line-2);stroke-width:1.2;transition:stroke .2s,opacity .2s}
+.edge.planned{stroke:var(--signal-dim);stroke-dasharray:5 4;opacity:.7}
+.edge.inferred{stroke-dasharray:1.5 4;stroke-linecap:round;stroke:var(--line-3)}
+.edge.gone{stroke:var(--bad);opacity:.35;stroke-dasharray:2 5}
+.edge.hl{stroke:var(--signal);stroke-width:1.6;filter:url(#glow)}
+.edge.hl.planned{stroke:var(--signal-2)}
+.edge.dim{opacity:.12}
+.edge.lit{stroke:var(--signal);stroke-width:2;filter:url(#glow);opacity:1}
+.edge.used{stroke:var(--signal-dim);stroke-width:2}
+.edge.infra{opacity:.45}
+.elabel{font:500 10px var(--f-mono);fill:var(--signal-2);paint-order:stroke;stroke:var(--ground);stroke-width:4px;stroke-linejoin:round}
+.vmark{fill:var(--warn)}
+
+.node{cursor:pointer;transition:opacity .2s}
+.node .nb{fill:var(--surface);stroke:var(--line-2);stroke-width:1}
+.node:hover .nb{stroke:var(--line-3);fill:var(--raised)}
+.node .gl{color:var(--ink-3)}
+.node .gl path{fill:none;stroke:currentColor;stroke-width:1.25;stroke-linecap:round;stroke-linejoin:round}
+.node .nm{font:500 13.5px var(--f-body);fill:var(--ink)}
+.node .sb{font:600 10px var(--f-label);letter-spacing:.12em;fill:var(--ink-3);text-transform:uppercase}
+.node .cost{font:900 15px var(--f-dot);fill:var(--ink-2)}
+.node .cost.u{fill:var(--ink-4)}
+.node .dot{fill:var(--ink-4)}
+.node .dot.ok{fill:var(--ok)} .node .dot.incomplete,.node .dot.warn{fill:var(--warn)} .node .dot.broken{fill:var(--bad)}
+.node .port{fill:var(--ground);stroke:var(--signal-dim);stroke-width:1.2;opacity:0;cursor:crosshair;transition:opacity .15s}
+.draft .node:hover .port{opacity:1}
+.node .port:hover{fill:var(--signal);stroke:var(--signal)}
+.node.planned .nb{stroke:var(--signal-dim);stroke-dasharray:5 3;fill:rgba(255,122,26,.035)}
+.node.planned .sb{fill:var(--signal-2)}
+.node.removed{opacity:.4}
+.node.removed .nb{stroke:rgba(239,91,76,.5);stroke-dasharray:2 3;fill:transparent}
+.node.removed .strike{stroke:var(--bad);stroke-width:1}
+.node.person .nb{fill:var(--raised);stroke:var(--line-3)}
+.node.person .gl{color:var(--signal)}
+.node.sel .nb{stroke:var(--signal);stroke-width:1.5;fill:#1f1711}
+.node.sel .gl{color:var(--signal)}
+.node.fx .nb{stroke:var(--signal-dim)}
+.node.fx .gl{color:var(--signal-2)}
+.node.dim{opacity:.22}
+.node.active .nb{stroke:var(--signal);stroke-width:1.6;fill:#23180f;filter:url(#glow)}
+.node.active .gl{color:var(--signal)}
+.node.reached .nb{stroke:var(--signal-dim)}
+.node.reached .gl{color:var(--signal-2)}
+.node.chain .nb{stroke:var(--signal-dim);stroke-dasharray:none}
+.node.econ-dim{opacity:.35}
+.node.econ-key .nb{stroke:var(--line-3)}
+.node.idle .cost{fill:var(--warn)}
+#cv.far .node .sb,#cv.far .node .cost,#cv.far .elabel,#cv.far .lane text.s,#cv.far .zone text.s{display:none}
+#cv.far .node .nm{font-size:17px;transform:translateY(5px)}
+#cv.far .lane text.t{font-size:18px}
+.sig{fill:var(--signal)}
+.sig-halo{fill:var(--signal);opacity:.22}
+.tmpline{stroke:var(--signal);stroke-width:1.4;stroke-dasharray:4 4;fill:none}
+.drop .nb{stroke:var(--signal)!important}
+
+@media (max-width:1100px){.search input{width:140px}}
+@media (max-width:900px){
+  .lenses{order:6;flex:1 1 100%;justify-content:space-between;overflow-x:auto}
+  .lenses button{padding:6px 8px;font-size:11px}
+  .scn{order:4;flex-wrap:wrap}
+  .main{grid-template-columns:minmax(0,1fr)}
+  .brief{position:absolute;inset:0 auto 0 0;width:min(320px,88%);z-index:8;transform:translateX(-102%);transition:transform .25s;box-shadow:12px 0 40px rgba(0,0,0,.5)}
+  .brief.open{transform:none}
+  .insp{position:absolute;inset:0 0 0 auto;width:min(372px,100%);z-index:9;box-shadow:-12px 0 40px rgba(0,0,0,.5)}
+  .only-narrow{display:grid}
+  .top{flex-wrap:wrap;gap:10px;padding-block:8px}
+  .brand span{display:none}
+  .search{order:5;flex:1}
+  .search input{width:100%}
+  .econ{gap:14px;padding:8px 12px}
+  .legend .src b{display:none}
+  .banner .txt{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <button class="icon-btn only-narrow" id="briefToggle" aria-label="Show brief"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 3h12M1 7h12M1 11h12" stroke="currentColor" stroke-width="1.3"/></svg></button>
+    <div class="brand"><div class="mark"><i></i><i></i></div><b>Atlas</b><span>AI ecosystem workbench</span></div>
+    <nav class="lenses" id="lenses" aria-label="Lens">
+      <button data-lens="arch" aria-pressed="true" title="How work, intelligence and money connect (1)">Architecture</button>
+      <button data-lens="infra" aria-pressed="false" title="Where everything runs (2)">Infrastructure</button>
+      <button data-lens="econ" aria-pressed="false" title="What it costs and what depends on it (3)">Economics</button>
+      <button data-lens="flow" aria-pressed="false" title="How a task travels (4)">Flows</button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="search">
+      <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="5" cy="5" r="3.8" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 8l3 3" stroke="currentColor" stroke-width="1.2"/></svg>
+      <input id="q" placeholder="Find anything  /" autocomplete="off" aria-label="Find a component">
+      <div class="results" id="results" hidden></div>
+    </div>
+    <div class="scn">
+      <select id="scnSel" class="sel" aria-label="Scenario"></select>
+      <button class="btn" id="compareBtn" aria-pressed="false" title="Compare this draft with what it was based on">Compare</button>
+      <div style="position:relative"><button class="btn" id="addBtn" title="Add a component to the draft">+ Add</button><div class="addmenu" id="addMenu" hidden></div></div>
+      <button class="btn ghost" id="modelBtn" title="See the data underneath the map">Data</button>
+    </div>
+  </header>
+  <div class="main">
+    <aside class="brief" id="brief" aria-label="Brief"></aside>
+    <section class="stage" id="stage">
+      <svg id="cv" aria-label="Architecture map">
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="bigglow" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="5"/></filter>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#221d19"/></pattern>
+        </defs>
+        <rect id="bgdots" x="-5000" y="-5000" width="10000" height="10000" fill="url(#dots)"/>
+        <g id="vp"><g id="deco"></g><g id="edges"></g><g id="sig"></g><g id="nodes"></g><g id="tmp"></g></g>
+      </svg>
+      <div class="ov banner" id="banner" hidden></div>
+      <div class="ov econ" id="econ" hidden></div>
+      <div class="ov empty-msg" id="emptyMsg" hidden></div>
+      <div class="ov legend"><button class="src" id="srcBtn"><i></i><b>Sources ·&nbsp;</b>1 of 4 connected</button></div>
+      <div class="pop" id="srcPop" hidden></div>
+      <div class="ov zoom"><button class="icon-btn" id="zOut" aria-label="Zoom out">−</button><button class="icon-btn" id="zFit" aria-label="Fit to screen" title="Fit (F)"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8" fill="none" stroke="currentColor" stroke-width="1.2"/></svg></button><button class="icon-btn" id="zIn" aria-label="Zoom in">+</button></div>
+      <div class="ov flowbar" id="flowbar" hidden></div>
+      <div class="ov toast" id="toast" hidden></div>
+    </section>
+    <aside class="insp" id="insp" hidden aria-label="Inspector"></aside>
+  </div>
+</div>
+<div class="modal" id="modal" hidden></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   1. DOMAIN SCHEMA
+   The map is one projection of this typed graph. Entities have a kind,
+   relations have a type with allowed endpoint kinds. Nothing about
+   positions lives here.
+   ===================================================================== */
+const KINDS = {
+  person:   {label:'Person',         plural:'You'},
+  interface:{label:'Interface',      plural:'Interfaces'},
+  agent:    {label:'Agent',          plural:'Agents'},
+  harness:  {label:'Harness',        plural:'Harnesses'},
+  model:    {label:'Model family',   plural:'Models'},
+  access:   {label:'Access plan',    plural:'Access plans'},
+  host:     {label:'Host',           plural:'Hosts'},
+  tool:     {label:'Tool',           plural:'Tools'},
+  mcp:      {label:'MCP server',     plural:'MCP servers'},
+  memory:   {label:'Memory',         plural:'Memory'},
+  project:  {label:'Project system', plural:'Project systems'},
+};
+const KIND_ORDER = ['person','interface','agent','harness','model','access','host','memory','mcp','tool','project'];
+// dep: 1 → `from` depends on `to`; -1 → `to` depends on `from`
+const REL = {
+  reaches:      {from:['person'],to:['interface'],verb:'uses',dep:1},
+  routes_to:    {from:['interface'],to:['agent','harness'],verb:'routes to',dep:1},
+  delegates_to: {from:['agent'],to:['agent'],verb:'delegates to',dep:1},
+  review_by:    {from:['agent'],to:['agent'],verb:'reviewed by',dep:1},
+  runs_in:      {from:['agent'],to:['harness'],verb:'runs in',dep:1},
+  uses_model:   {from:['agent'],to:['model'],verb:'thinks with',dep:1},
+  grants:       {from:['access'],to:['model'],verb:'grants',dep:-1},
+  authorizes:   {from:['access'],to:['harness'],verb:'usable in',dep:-1},
+  hosted_on:    {from:['agent','harness','interface','mcp','memory','tool','project'],to:['host'],verb:'runs on',dep:1},
+  uses_tool:    {from:['agent','harness'],to:['tool'],verb:'uses',dep:1},
+  connects_mcp: {from:['agent','harness'],to:['mcp'],verb:'connects to',dep:1},
+  uses_memory:  {from:['agent','harness'],to:['memory'],verb:'remembers in',dep:1},
+  tracks_in:    {from:['agent'],to:['project'],verb:'tracks work in',dep:1},
+};
+const PROV = {
+  stated:'You stated', documented:'Vendor-documented', inferred:'Inferred · confirm',
+  proposed:'Proposed', recorded:'You recorded'
+};
+const REJECT = {
+  'agent>access':'Agents don’t pay directly. Give the agent a harness and a model; Atlas finds the access plan that covers both.',
+  'model>host':'Models are served by their vendor. Put the harness on the host instead.',
+  'access>agent':'Access plans unlock models and harnesses, not agents. Link the plan to a model or harness.',
+  'model>harness':'Harnesses reach models through an access plan. Link the plan to both.',
+  'harness>model':'Harnesses reach models through an access plan. Link the plan to both.',
+  'agent>host':null,
+};
+
+/* =====================================================================
+   2. SEED — what Atlas knows about your environment today.
+   Only what you told me, what vendors document, or clearly-marked
+   inferences. Unknowns stay null.
+   ===================================================================== */
+const SEED = {
+  entities:[
+    {id:'me',kind:'person',name:'You',prov:'stated',summary:'Owner of the ecosystem. Final approver for anything that ships or spends money.'},
+    {id:'if_term',kind:'interface',name:'Terminal',prov:'inferred',summary:'Where the CLI harnesses are driven from.',
+      notes:[{t:'Inferred: Claude Code, Codex, OpenCode and OMP are terminal-first tools. Confirm which machines you use them on.'}]},
+
+    {id:'sub_claude',kind:'access',name:'Claude subscription',prov:'stated',cost:{amount:null,basis:'flat'},
+      summary:'Anthropic consumer plan. Includes Claude Code.',
+      facts:[['Tier',null],['Billing cycle',null],['Quota window',null]],
+      notes:[{lvl:'risk',t:'Using a Claude plan inside third-party harnesses was blocked in April 2026 and restored with conditions in May 2026 (reported). Treat any path other than Claude Code as unstable.',src:'https://techcrunch.com/2026/04/04/anthropic-says-claude-code-subscribers-will-need-to-pay-extra-for-openclaw-support/'}]},
+    {id:'sub_chatgpt',kind:'access',name:'ChatGPT subscription',prov:'stated',cost:{amount:null,basis:'flat'},
+      summary:'OpenAI consumer plan. Codex usage is included with ChatGPT plans.',
+      facts:[['Tier',null],['Billing cycle',null],['Quota window',null]],
+      notes:[{t:'Codex is included with ChatGPT plans (OpenAI Help Center).',src:'https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan'}]},
+    {id:'sub_google',kind:'access',name:'Google AI subscription',prov:'stated',cost:{amount:null,basis:'flat'},
+      summary:'Google AI plan, used here for Antigravity. Quota scales with tier.',
+      facts:[['Tier',null],['Billing cycle',null],['Quota window',null]],
+      notes:[{t:'Antigravity also offers some Anthropic Claude models under Google quota (vendor-reported; availability and limits vary by tier).',src:'https://antigravity.google/docs/plans/'}]},
+    {id:'sub_ocgo',kind:'access',name:'OpenCode Go',prov:'stated',cost:{amount:null,basis:'flat',ref:'$10/mo published list price. Not confirmed as what you pay.'},
+      summary:'Flat plan from the OpenCode team for open-weight coding models, served as one OpenAI-compatible endpoint.',
+      facts:[['Usage caps','Dollar-denominated per 5 h / week / month (reported)'],['Endpoint','OpenAI-compatible']],
+      notes:[{t:'Because the endpoint is OpenAI-compatible, other harnesses (Hermes, OMP) can point at it too.',src:'https://opencode.ai/docs/go/'}]},
+
+    {id:'m_claude',kind:'model',name:'Claude models',prov:'documented',summary:'Anthropic’s model family. Which versions you get depends on plan and harness.',facts:[['Vendor','Anthropic'],['Versions in use',null]]},
+    {id:'m_gpt',kind:'model',name:'OpenAI GPT models',prov:'documented',summary:'OpenAI’s model family, including Codex-tuned variants.',facts:[['Vendor','OpenAI'],['Versions in use',null]]},
+    {id:'m_gemini',kind:'model',name:'Gemini models',prov:'documented',summary:'Google’s model family.',facts:[['Vendor','Google'],['Versions in use',null]]},
+    {id:'m_open',kind:'model',name:'Open-weight models',prov:'documented',summary:'GLM, Kimi, Qwen, DeepSeek, MiniMax and others via OpenCode Go. The roster changes often.',facts:[['Vendor','Various'],['Versions in use',null]]},
+
+    {id:'h_cc',kind:'harness',name:'Claude Code',prov:'stated',summary:'Anthropic’s agentic coding harness: CLI, IDE extensions, web.'},
+    {id:'h_codex',kind:'harness',name:'Codex',prov:'stated',summary:'OpenAI’s coding agent: CLI, IDE extension, cloud tasks.'},
+    {id:'h_ag',kind:'harness',name:'Antigravity',prov:'stated',summary:'Google’s agent-first IDE. Runs on your machine; models run in Google’s cloud.'},
+    {id:'h_oc',kind:'harness',name:'OpenCode',prov:'stated',summary:'Open-source terminal coding agent. Provider-agnostic.'},
+    {id:'h_omp',kind:'harness',name:'OMP · Oh My Pi',prov:'stated',summary:'Fork of Mario Zechner’s pi coding agent (can1357/oh-my-pi). 60+ providers, including OAuth and coding-plan sign-in.',
+      notes:[{t:'Which account OMP signs in with is not recorded, so Atlas can’t tell what it runs on.'}]},
+    {id:'h_hermes',kind:'harness',name:'Hermes Agent',prov:'stated',summary:'Nous Research’s open-source agent runtime: persistent memory, self-written skills, messaging gateway (Telegram, Discord, Slack…), MCP client, scheduled jobs.',
+      notes:[{t:'Hermes is the natural candidate to report changes into Atlas later. Atlas treats it as one controller, not the source of truth.',src:'https://hermes-agent.nousresearch.com/docs/'}]},
+
+    {id:'host_local',kind:'host',name:'Local machine(s)',prov:'stated',zone:'local',summary:'Your own computers.',facts:[['Machines',null],['OS',null]]},
+    {id:'host_vps',kind:'host',name:'VPS',prov:'stated',zone:'vps',cost:{amount:null,basis:'flat'},summary:'Always-on server. Provider and size not recorded.',facts:[['Provider',null],['Region',null],['CPU / RAM',null]]},
+
+    {id:'mem_hermes',kind:'memory',name:'Hermes memory',prov:'documented',summary:'Built into Hermes: curated facts plus session search. Only Hermes can read it today.'},
+    {id:'tool_github',kind:'tool',name:'GitHub',prov:'inferred',saas:true,summary:'Code hosting and pull requests.',notes:[{t:'Inferred from this repository living on GitHub.'}]},
+  ],
+  relations:[
+    {id:'c1',type:'grants',from:'sub_claude',to:'m_claude',prov:'documented'},
+    {id:'c2',type:'grants',from:'sub_chatgpt',to:'m_gpt',prov:'documented'},
+    {id:'c3',type:'grants',from:'sub_google',to:'m_gemini',prov:'documented'},
+    {id:'c4',type:'grants',from:'sub_google',to:'m_claude',prov:'documented',note:'Inside Antigravity only; limits vary by tier.'},
+    {id:'c5',type:'grants',from:'sub_ocgo',to:'m_open',prov:'documented'},
+    {id:'c6',type:'authorizes',from:'sub_claude',to:'h_cc',prov:'documented'},
+    {id:'c7',type:'authorizes',from:'sub_chatgpt',to:'h_codex',prov:'documented'},
+    {id:'c8',type:'authorizes',from:'sub_google',to:'h_ag',prov:'documented'},
+    {id:'c9',type:'authorizes',from:'sub_ocgo',to:'h_oc',prov:'documented'},
+    {id:'c10',type:'reaches',from:'me',to:'if_term',prov:'inferred'},
+    {id:'c11',type:'routes_to',from:'if_term',to:'h_cc',prov:'inferred'},
+    {id:'c12',type:'routes_to',from:'if_term',to:'h_codex',prov:'inferred'},
+    {id:'c13',type:'routes_to',from:'if_term',to:'h_oc',prov:'inferred'},
+    {id:'c14',type:'routes_to',from:'if_term',to:'h_omp',prov:'inferred'},
+    {id:'c15',type:'uses_memory',from:'h_hermes',to:'mem_hermes',prov:'documented'},
+    {id:'c16',type:'hosted_on',from:'if_term',to:'host_local',prov:'inferred'},
+  ]
+};
+
+/* =====================================================================
+   3. SCENARIOS — a draft is a change-set over its parent, never a copy.
+   That makes "what changed" free and keeps reality untouched.
+   ===================================================================== */
+const P = (id,kind,name,extra={}) => ({op:'add',entity:{id,kind,name,prov:'proposed',...extra}});
+const L = (id,type,from,to,extra={}) => ({op:'link',rel:{id,type,from,to,prov:'proposed',...extra}});
+const SCENARIOS = [{
+  id:'draftA', name:'Draft A · Dev pipeline', parent:'current', author:'Proposed by Atlas',
+  desc:'A proposal built only from what you own: one entry point on your phone, Hermes on the VPS as dispatcher, specialists in the harnesses that already have access. Solid = what you have. Dashed = proposed.',
+  ops:[
+    P('if_tg','interface','Telegram',{saas:true,summary:'Mobile entry point. Hermes has a native Telegram gateway.'}),
+    P('a_disp','agent','Dispatcher',{role:'orchestrator',summary:'Front door for all delegated work.',duties:['Classifies each request and routes it to a specialist','Opens and closes cards on the project board','Reports results back to you']}),
+    P('a_arch','agent','Architect',{role:'specialist',summary:'Plans before code is written.',duties:['Turns a request into a plan and interface contracts','Writes the task brief the Coder works from']}),
+    P('a_coder','agent','Coder',{role:'specialist',summary:'Implements on a branch.',duties:['Implements the brief on a feature branch','Keeps commits small and reviewable']}),
+    P('a_rev','agent','Reviewer',{role:'reviewer',summary:'Independent review from a different model family than the Coder.',duties:['Reviews every diff before it reaches you','Blocks on correctness, not style']}),
+    P('a_ver','agent','Verifier',{role:'specialist',summary:'Runs builds and tests on the always-on server.',duties:['Runs the test suite on the VPS','Blocks the pull request on failure']}),
+    P('a_res','agent','Researcher',{role:'specialist',summary:'Reads, compares and remembers.',duties:['Browses and reads sources','Writes findings into shared memory for later tasks']}),
+    P('a_quick','agent','Quick coder',{role:'specialist',summary:'Small, fast edits straight from the terminal. No pipeline.',duties:['One-file fixes and scripts','Cheap model first, stronger fallback']}),
+    P('tool_browser','tool','Browser',{summary:'Headless browser for research.'}),
+    P('mem_shared','memory','Shared project memory',{summary:'One store every harness can read: decisions, conventions, project state. Today each harness remembers alone.'}),
+    P('proj_board','project','Project board',{summary:'Where tasks and outcomes live. System not chosen.'}),
+    P('mcp_github','mcp','GitHub MCP',{saas:true,summary:'Structured GitHub access for any MCP-capable harness.'}),
+
+    L('p1','reaches','me','if_tg'),
+    L('p2','routes_to','if_tg','a_disp'),
+    L('p3','runs_in','a_disp','h_hermes'),
+    L('p4','uses_model','a_disp','m_open'),
+    L('p5','authorizes','sub_ocgo','h_hermes',{note:'OpenAI-compatible endpoint; Hermes accepts custom endpoints.'}),
+    L('p6','hosted_on','h_hermes','host_vps'),
+    L('p7','delegates_to','a_disp','a_arch'),
+    L('p8','delegates_to','a_disp','a_res'),
+    L('p9','tracks_in','a_disp','proj_board'),
+    L('p10','runs_in','a_arch','h_cc'),
+    L('p11','uses_model','a_arch','m_claude'),
+    L('p12','uses_memory','a_arch','mem_shared'),
+    L('p13','delegates_to','a_arch','a_coder'),
+    L('p14','runs_in','a_coder','h_codex'),
+    L('p15','uses_model','a_coder','m_gpt'),
+    L('p16','uses_tool','a_coder','tool_github'),
+    L('p17','review_by','a_coder','a_rev'),
+    L('p18','runs_in','a_rev','h_cc'),
+    L('p19','uses_model','a_rev','m_claude'),
+    L('p20','connects_mcp','a_rev','mcp_github'),
+    L('p21','delegates_to','a_rev','a_ver'),
+    L('p22','runs_in','a_ver','h_oc'),
+    L('p23','uses_model','a_ver','m_open'),
+    L('p24','hosted_on','a_ver','host_vps'),
+    L('p25','uses_tool','a_ver','tool_github'),
+    L('p26','runs_in','a_res','h_hermes'),
+    L('p27','uses_model','a_res','m_open'),
+    L('p28','uses_tool','a_res','tool_browser'),
+    L('p29','uses_memory','a_res','mem_shared'),
+    L('p30','runs_in','a_quick','h_oc'),
+    L('p31','uses_model','a_quick','m_open'),
+    L('p32','uses_model','a_quick','m_gpt',{fallback:true}),
+    L('p33','authorizes','sub_chatgpt','h_oc',{volatile:'ChatGPT sign-in inside OpenCode relies on a community OAuth plugin that OpenAI does not endorse. It could stop working without notice.'}),
+    L('p34','hosted_on','a_quick','host_local'),
+    L('p35','routes_to','if_term','a_quick'),
+    L('p36','uses_tool','a_quick','tool_github'),
+    L('p37','hosted_on','mem_shared','host_vps'),
+    L('p38','hosted_on','tool_browser','host_vps'),
+    L('p39','uses_memory','a_disp','mem_shared'),
+    L('p40','hosted_on','h_cc','host_vps',{note:'Headless install so the Dispatcher can call it.'}),
+    L('p41','hosted_on','h_codex','host_vps',{note:'Headless install so the Dispatcher can call it.'}),
+  ],
+  workflows:[
+    {id:'wf_dev',name:'Software development',result:'Pull request ready for you. Dispatcher posts the summary to Telegram.',steps:[
+      ['me','Sends a feature request from the phone'],['if_tg','Delivers it to Hermes'],['a_disp','Classifies it as a build task, opens a card'],
+      ['a_arch','Writes the plan and task brief'],['a_coder','Implements on a branch'],['a_rev','Reviews with a different model family'],
+      ['a_ver','Runs the tests on the VPS'],['tool_github','Pull request opened']]},
+    {id:'wf_research',name:'Research',result:'Findings stored in shared memory; summary back to you.',steps:[
+      ['me','Asks a question'],['if_tg','Delivers it to Hermes'],['a_disp','Routes to research'],['a_res','Reads sources, compares them'],['tool_browser','Fetches pages'],['mem_shared','Findings saved for later tasks']]},
+    {id:'wf_quick',name:'Quick coding',result:'Change committed without touching the pipeline.',steps:[
+      ['me','Opens a terminal'],['if_term','Starts OpenCode'],['a_quick','Edits with a cheap, fast model'],['tool_github','Commits']]},
+  ]
+}];
+
+/* =====================================================================
+   4. STORE — the workspace document. Browser storage is only a
+   stand-in for the real store (see Data).
+   ===================================================================== */
+const DBV = 3, LS = 'atlas.workspace.v3';
+const clone = o => JSON.parse(JSON.stringify(o));
+function fresh(){ return {v:DBV, base:clone(SEED), scenarios:clone(SCENARIOS)}; }
+function load(){ try{ const s=localStorage.getItem(LS); if(!s) return null; const d=JSON.parse(s); return d&&d.v===DBV?d:null; }catch(e){ return null; } }
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(DB)); }catch(e){} }
+let DB = load() || fresh();
+
+const state = { scn:'draftA', lens:'arch', sel:null, spot:null, iso:null, compare:false, wf:'wf_dev', pins:{arch:{},infra:{}}, flow:null };
+
+/* =====================================================================
+   5. GRAPH ENGINE — materialize a scenario, then answer questions.
+   ===================================================================== */
+const scenario = id => DB.scenarios.find(s=>s.id===id);
+function materialize(sid){
+  const ents={}, order=[];
+  for(const e of DB.base.entities){ ents[e.id]={...clone(e),origin:'current'}; order.push(e.id); }
+  let rels = DB.base.relations.map(r=>({...clone(r),origin:'current'}));
+  const chain=[]; let s=sid!=='current'?scenario(sid):null;
+  while(s){ chain.unshift(s); s = s.parent && s.parent!=='current' ? scenario(s.parent) : null; }
+  const top = sid!=='current'?scenario(sid):null;
+  for(const sc of chain){
+    const mine = sc===top;
+    for(const o of sc.ops){
+      if(o.op==='add'){ ents[o.entity.id]={...clone(o.entity),origin:mine?'planned':'inherited'}; order.push(o.entity.id); }
+      else if(o.op==='link'){ rels.push({...clone(o.rel),origin:mine?'planned':'inherited'}); }
+      else if(o.op==='remove'){ if(ents[o.id]){ ents[o.id].removed=true; ents[o.id].removedHere=mine; } }
+      else if(o.op==='unlink'){ const r=rels.find(r=>r.id===o.id); if(r){ r.removed=true; r.removedHere=mine; } }
+      else if(o.op==='set'){ const e=ents[o.id]; if(e){ e[o.key]=clone(o.value); if(mine)(e.changed=e.changed||[]).push(o.key); } }
+    }
+  }
+  rels = rels.filter(r=>ents[r.from]&&ents[r.to]);
+  for(const r of rels) r.dead = !!(ents[r.from].removed||ents[r.to].removed);
+  const live = rels.filter(r=>!r.removed&&!r.dead);
+  const list = [...new Set(order)].map(id=>ents[id]);
+  return {sid, ents, list, rels, live, alive:list.filter(e=>!e.removed), wfs: top? allWorkflows(top):[]};
+}
+function allWorkflows(sc){ const out=[]; let s=sc; while(s){ for(const w of (s.workflows||[])) if(!out.find(x=>x.id===w.id)) out.push(w); s = s.parent&&s.parent!=='current'?scenario(s.parent):null; } return out; }
+const outR=(G,id,t)=>G.live.filter(r=>r.from===id&&(!t||r.type===t));
+const inR =(G,id,t)=>G.live.filter(r=>r.to===id&&(!t||r.type===t));
+const outE=(G,id,t)=>outR(G,id,t).map(r=>G.ents[r.to]);
+const inE =(G,id,t)=>inR(G,id,t).map(r=>G.ents[r.from]);
+const depPair = r => REL[r.type].dep===1?[r.from,r.to]:[r.to,r.from];
+
+function accessPaths(G,hid,mid){
+  const out=[];
+  for(const g of inR(G,mid,'grants')) for(const a of outR(G,g.from,'authorizes')) if(a.to===hid) out.push({acc:G.ents[g.from],g,a});
+  return out;
+}
+function agentHosts(G,a){ const own=outE(G,a.id,'hosted_on'); if(own.length) return own; const h=outE(G,a.id,'runs_in')[0]; return h?outE(G,h.id,'hosted_on'):[]; }
+function evalAgent(G,a){
+  const iss=[];
+  const hR=outR(G,a.id,'runs_in')[0], h=hR&&G.ents[hR.to];
+  const mRs=outR(G,a.id,'uses_model'); const pR=mRs.find(r=>!r.fallback)||mRs[0]; const fR=mRs.find(r=>r!==pR);
+  const m=pR&&G.ents[pR.to], fb=fR&&G.ents[fR.to];
+  for(const r of G.rels) if(r.from===a.id&&r.dead&&!r.removed&&G.ents[r.to].removed) iss.push({lvl:'broken',t:`${G.ents[r.to].name} is removed in this draft`});
+  if(!h) iss.push({lvl:'incomplete',t:'No harness assigned'});
+  if(!m) iss.push({lvl:'incomplete',t:'No model assigned'});
+  let paths=[],fpaths=[];
+  if(h&&m){ paths=accessPaths(G,h.id,m.id); if(!paths.length) iss.push({lvl:'broken',t:`No access plan lets ${h.name} use ${m.name}`}); }
+  if(h&&fb){ fpaths=accessPaths(G,h.id,fb.id); if(!fpaths.length) iss.push({lvl:'warn',t:`Fallback ${fb.name} is unreachable in ${h.name}`}); }
+  const hosts=agentHosts(G,a);
+  if(!hosts.length) iss.push({lvl:'warn',t:'Where it runs is not recorded'});
+  const status=iss.some(i=>i.lvl==='broken')?'broken':iss.some(i=>i.lvl==='incomplete')?'incomplete':'ok';
+  return {status,iss,h,m,fb,paths,fpaths,hosts,hR,pR,fR};
+}
+function costs(G){
+  let known=0,n=0; const unknown=[];
+  for(const e of G.alive) if(e.cost){ if(e.cost.amount==null) unknown.push(e); else { known+=+e.cost.amount; n++; } }
+  return {known,n,unknown};
+}
+function accessUse(G){
+  const use={}; for(const a of G.alive) if(a.kind==='access') use[a.id]={agents:[],sole:[]};
+  for(const a of G.alive.filter(e=>e.kind==='agent')){
+    const ev=evalAgent(G,a); const accs=new Set([...ev.paths,...ev.fpaths].map(p=>p.acc.id));
+    for(const id of accs){ use[id].agents.push(a); }
+    if(ev.paths.length===1) use[ev.paths[0].acc.id].sole.push(a);
+  }
+  return use;
+}
+const plural=(n,w,p)=>`${n} ${n===1?w:(p||w+'s')}`;
+const names=l=>{ const n=l.map(e=>e.name); return n.length<=3?n.join(n.length===2?' and ':', '):`${n.slice(0,2).join(', ')} and ${n.length-2} more`; };
+
+function insights(G){
+  const I=[], A=G.alive, by=k=>A.filter(e=>e.kind===k);
+  const agents=by('agent'), harn=by('harness'), acc=by('access'), models=by('model'), hosts=by('host'), mems=by('memory');
+  const ev=Object.fromEntries(agents.map(a=>[a.id,evalAgent(G,a)]));
+  const broken=agents.filter(a=>ev[a.id].status==='broken');
+  if(broken.length) I.push({p:10,sev:'broken',title:`${plural(broken.length,'agent')} can’t run`,body:broken.map(a=>`${a.name}: ${ev[a.id].iss.find(i=>i.lvl==='broken').t}.`).join(' '),next:'Link an access plan that covers both the harness and the model, or move the agent to a harness that already has one.',ids:broken.map(a=>a.id)});
+  const inc=agents.filter(a=>ev[a.id].status==='incomplete');
+  if(inc.length) I.push({p:7,sev:'gap',title:`${plural(inc.length,'agent')} not fully assigned`,body:inc.map(a=>`${a.name}: ${ev[a.id].iss.filter(i=>i.lvl==='incomplete').map(i=>i.t.toLowerCase()).join(', ')}.`).join(' '),next:'Drag from the agent’s right edge onto a harness and a model.',ids:inc.map(a=>a.id)});
+  if(!agents.length) I.push({p:9,sev:'gap',title:'No agents defined yet',body:`You own ${plural(harn.length,'harness','harnesses')} and ${plural(acc.length,'access plan')}, but no worker with a role. Until agents exist, Atlas can’t show delegation, workflows, or which plans earn their cost.`,next:'Open Draft A: a proposed agent layout built only from what you own.',act:'draftA',ids:harn.map(h=>h.id)});
+  for(const h of hosts){ const on=agents.filter(a=>ev[a.id].hosts.some(x=>x.id===h.id)); if(on.length>=3) I.push({p:8,sev:'risk',title:`${h.name} carries ${on.length} of ${agents.length} agents`,body:`If the ${h.name} goes down, ${names(on)} stop together. Nothing reports its health to Atlas yet.`,next:`Add a health signal for the ${h.name} and decide which agents need a local fallback.`,ids:[h.id,...on.map(a=>a.id)]}); }
+  if(agents.length && !A.some(e=>e.kind==='interface'&&outE(G,e.id,'routes_to').some(x=>x.kind==='agent'))) I.push({p:7,sev:'gap',title:'No way to hand work to your agents',body:'No interface routes to an agent, so every task starts with you opening a harness by hand.',next:'Connect an interface (Telegram, Discord, web) to an orchestrating agent.',ids:by('interface').map(e=>e.id)});
+  const noAcc=harn.filter(h=>!inR(G,h.id,'authorizes').length);
+  if(noAcc.length) I.push({p:6,sev:'gap',title:`${names(noAcc)} ${noAcc.length>1?'have':'has'} no model access`,body:`No access plan is linked, so Atlas can’t tell what ${noAcc.length>1?'they run':'it runs'} on or what ${noAcc.length>1?'they cost':'it costs'}.`,next:'Record the plan or API key each one signs in with.',ids:noAcc.map(e=>e.id)});
+  const vol=G.live.filter(r=>r.volatile);
+  if(vol.length) I.push({p:5,sev:'risk',title:`${plural(vol.length,'access path')} ${vol.length>1?'rely':'relies'} on unofficial terms`,body:vol.map(r=>r.volatile).join(' '),next:'Keep a supported fallback for anything that depends on it.',ids:[...new Set(vol.flatMap(r=>[r.from,r.to]))]});
+  if(agents.length>=2){ const shared=mems.some(m=>inR(G,m.id,'uses_memory').filter(r=>G.ents[r.from].kind==='agent').length>=2); if(!shared) I.push({p:5,sev:'gap',title:'Agents don’t share memory',body:'Each agent remembers alone, so decisions made in one harness are invisible to the others.',next:'Add one shared memory store and connect agents to it.',ids:mems.map(m=>m.id)}); }
+  for(const m of models){ const g=inR(G,m.id,'grants'); if(g.length>1) I.push({p:4,sev:'overlap',title:`${m.name} come from ${g.length} plans`,body:`${names(g.map(r=>G.ents[r.from]))} both grant ${m.name}. Check whether either is kept mainly for this.`,next:'Record which harness you actually use each one in.',ids:[m.id,...g.map(r=>r.from)]}); }
+  if(agents.length){ const use=accessUse(G); const idle=acc.filter(a=>!use[a.id].agents.length); if(idle.length) I.push({p:4,sev:'idle',title:`${names(idle)} ${idle.length>1?'power':'powers'} no agent`,body:'Paid access that no configured agent depends on. You may still use it by hand; record that, or consider dropping it.',next:'Assign it to an agent, or test removing it.',ids:idle.map(e=>e.id)}); }
+  const unplaced=harn.filter(h=>!outR(G,h.id,'hosted_on').length && !agents.some(a=>ev[a.id].h?.id===h.id&&outR(G,a.id,'hosted_on').length));
+  if(unplaced.length) I.push({p:3,sev:'unknown',title:`Where ${unplaced.length>1?'do':'does'} ${names(unplaced)} run?`,body:'Location not recorded, so the infrastructure view can’t place '+(unplaced.length>1?'them.':'it.'),next:'Mark each one as local, VPS, or both.',ids:unplaced.map(e=>e.id)});
+  const c=costs(G);
+  if(c.unknown.length) I.push({p:2,sev:'unknown',title:`${plural(c.unknown.length,'cost')} not recorded`,body:`${names(c.unknown)}. Totals only include recorded amounts.`,next:'Enter what you actually pay in the inspector.',ids:c.unknown.map(e=>e.id)});
+  I.push({p:1,sev:'unknown',title:'Nothing reports live state',body:'Every fact here was entered by hand. Atlas can’t see whether a runtime is up, a key has expired, or a quota ran out.',next:'Connect Hermes or a small discovery script on the VPS as the first live source.',ids:hosts.map(h=>h.id),src:true});
+  return I.sort((a,b)=>b.p-a.p);
+}
+function diffOf(sid){
+  const sc=scenario(sid); const G0=materialize(sc.parent||'current'), G1=materialize(sid);
+  const added=G1.list.filter(e=>e.origin==='planned'&&!e.removed);
+  const removed=G1.list.filter(e=>e.removedHere);
+  const rAdd=G1.rels.filter(r=>r.origin==='planned'&&!r.removed&&!r.dead).length;
+  const rDel=G1.rels.filter(r=>(r.removedHere)||(r.dead&&G0.live.some(x=>x.id===r.id))).length;
+  const c0=costs(G0), c1=costs(G1);
+  const t0=new Set(insights(G0).map(i=>i.title)), t1=insights(G1);
+  const newI=t1.filter(i=>!t0.has(i.title)&&['broken','risk','gap'].includes(i.sev));
+  const agents=G1.alive.filter(e=>e.kind==='agent').map(a=>evalAgent(G1,a));
+  return {G0,G1,added,removed,rAdd,rDel,c0,c1,newI,ok:agents.filter(x=>x.status==='ok').length,bad:agents.filter(x=>x.status!=='ok').length,parent:sc.parent};
+}
+
+/* =====================================================================
+   6. LAYOUT — projections of the same graph. Positions are view state.
+   ===================================================================== */
+const W=188,H=52,LW=252,RY=70,TOP=86;
+function laneOf(e){
+  if(e.kind==='person'||e.kind==='interface') return 0;
+  if(e.kind==='agent') return e.role==='orchestrator'?1:2;
+  return {harness:3,model:4,access:5}[e.kind] ?? -1;
+}
+const LANES=[['Entry','who asks, and through what'],['Orchestration','who routes the work'],['Agents','who does the work'],['Harnesses','where agents execute'],['Models','the intelligence used'],['Access · cost','what unlocks it']];
+function layoutArch(G){
+  const cols=LANES.map(()=>[]); const band=[],infra=[];
+  for(const e of G.list){ const l=laneOf(e); if(l>=0) cols[l].push(e); else if(e.kind==='host') infra.push(e); else band.push(e); }
+  const nb={}; for(const r of G.rels){ (nb[r.from]=nb[r.from]||[]).push(r.to); (nb[r.to]=nb[r.to]||[]).push(r.from); }
+  const idx={};
+  const setIdx=()=>cols.forEach(c=>{ const off=(maxN-c.length)/2; c.forEach((e,i)=>idx[e.id]=off+i); });
+  const maxN=Math.max(...cols.map(c=>c.length),1);
+  setIdx();
+  const bary=(e,li,dirs)=>{ const ns=(nb[e.id]||[]).filter(id=>G.ents[id]&&dirs.includes(laneOf(G.ents[id]))); if(!ns.length) return idx[e.id]; return ns.reduce((s,id)=>s+idx[id],0)/ns.length; };
+  for(let it=0;it<6;it++){
+    for(let l=1;l<6;l++){ cols[l].sort((a,b)=>bary(a,l,[l-1,l+1])-bary(b,l,[l-1,l+1])); setIdx(); }
+    for(let l=4;l>=0;l--){ cols[l].sort((a,b)=>(a.kind==='person'?-99:bary(a,l,[l+1,l-1]))-(b.kind==='person'?-99:bary(b,l,[l+1,l-1]))); setIdx(); }
+  }
+  const pos={};
+  cols.forEach((c,l)=>c.forEach(e=>pos[e.id]={x:l*LW,y:TOP+idx[e.id]*RY}));
+  const bandTop=TOP+maxN*RY+86;
+  band.sort((a,b)=>KIND_ORDER.indexOf(a.kind)-KIND_ORDER.indexOf(b.kind));
+  band.forEach((e,i)=>pos[e.id]={x:(i%3)*LW,y:bandTop+Math.floor(i/3)*RY});
+  infra.forEach((e,i)=>pos[e.id]={x:(3+i%3)*LW,y:bandTop+Math.floor(i/3)*RY});
+  const bandRows=Math.max(Math.ceil(band.length/3),Math.ceil(infra.length/3),1);
+  const deco={type:'arch',laneH:bandTop-60,lanes:cols.map((c,l)=>({x:l*LW,t:LANES[l][0],s:LANES[l][1],n:c.filter(e=>!e.removed).length})),
+    bands:[{x:0,y:bandTop,w:3*LW-(LW-W),t:'Capabilities',s:'memory · MCP · tools · projects',rows:bandRows},{x:3*LW,y:bandTop,w:3*LW-(LW-W),t:'Infrastructure',s:'where things run',rows:bandRows}]};
+  return {kind:'arch',pos,deco};
+}
+function layoutInfra(G){
+  const pos={}, zones=[];
+  const hosts=G.list.filter(e=>e.kind==='host');
+  const zoneOf=e=>{
+    if(e.kind==='host'||e.kind==='person') return null;
+    if(e.kind==='access'||e.kind==='model') return 'cloud';
+    let h = e.kind==='agent'? agentHosts(G,e)[0] : outE(G,e.id,'hosted_on')[0];
+    if(h) return h.id;
+    if(e.saas) return 'cloud';
+    return 'unplaced';
+  };
+  const members={};
+  for(const e of G.list){ const z=zoneOf(e); if(z) (members[z]=members[z]||[]).push(e); }
+  const order=[...hosts.filter(h=>h.zone==='local'),...hosts.filter(h=>h.zone!=='local'),{id:'cloud',name:'Vendor cloud',sub:'Plans, models and hosted services'},{id:'unplaced',name:'Unplaced',sub:'Location not recorded',dashed:true}];
+  const person=G.list.find(e=>e.kind==='person'); if(person) pos[person.id]={x:0,y:TOP+54};
+  let x=W+70;
+  for(const z of order){
+    const m=(members[z.id]||[]).sort((a,b)=>KIND_ORDER.indexOf(a.kind)-KIND_ORDER.indexOf(b.kind));
+    const cols=m.length>4?2:1, rows=Math.max(Math.ceil(m.length/cols),1);
+    const w=cols*(W+18)+26, h=rows*RY+84;
+    m.forEach((e,i)=>pos[e.id]={x:x+22+(i%cols)*(W+18),y:TOP+62+Math.floor(i/cols)*RY});
+    const host=G.ents[z.id];
+    zones.push({id:z.id,x,y:TOP,w,h,t:host?host.name:z.name,s:host?(host.facts||[]).map(f=>`${f[0]}: ${f[1]??'?'}`).join(' · '):z.sub,dashed:z.dashed,host:!!host,cost:host&&host.cost,empty:!m.length,removed:host&&host.removed});
+    x+=w+36;
+  }
+  return {kind:'infra',pos,deco:{type:'infra',zones}};
+}
+
+/* =====================================================================
+   7. RENDER
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const svg=$('#cv'), vp=$('#vp'), gDeco=$('#deco'), gEdges=$('#edges'), gNodes=$('#nodes'), gSig=$('#sig'), gTmp=$('#tmp');
+const NS='http://www.w3.org/2000/svg';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const GLYPH={
+  person:'M8 7.4a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z M3 14c.6-2.8 2.6-4.3 5-4.3s4.4 1.5 5 4.3',
+  interface:'M2 3h12v10H2z M4.6 6.6l2 1.6-2 1.6 M8.2 10h3',
+  agent:'M8 1.6l5.5 3.2v6.4L8 14.4l-5.5-3.2V4.8z M8 5.8v4.4 M5.9 8h4.2',
+  harness:'M2.5 2.5h11v11h-11z M5.5 5.5h5v5h-5z',
+  model:'M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2z M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z',
+  access:'M2 3.8h12v8.4H2z M2 6.6h12 M4.2 10h3',
+  host:'M2.5 2.5h11v4.6h-11z M2.5 8.9h11v4.6h-11z M5 4.8h.01 M5 11.2h.01',
+  tool:'M8 2.4l5.6 10.2H2.4z',
+  mcp:'M5.6 1.8v3 M10.4 1.8v3 M3.6 4.8h8.8v2.6a4.4 4.4 0 0 1-8.8 0z M8 11.8v2.6',
+  memory:'M3 4c0-1.1 2.2-2 5-2s5 .9 5 2-2.2 2-5 2-5-.9-5-2z M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4 M3 8c0 1.1 2.2 2 5 2s5-.9 5-2',
+  project:'M2.5 2.5h11v11h-11z M5.4 5v6 M8 5v3.6 M10.6 5v4.6',
+};
+const glyph=(k,cls='g')=>`<svg class="${cls}" viewBox="0 0 16 16" aria-hidden="true"><path d="${GLYPH[k]}" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const money=v=>v==null?'$ ?':'$'+(+v%1?(+v).toFixed(2):(+v));
+const trunc=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s;
+
+let G=null, LAY=null, POS={}, EV={}, FOCUS=null, USE={};
+const view={k:1,x:0,y:0};
+
+function subLabel(e){
+  const pre=e.removed?'− ':e.origin!=='current'?'+ ':'';
+  if(e.kind==='agent'){ const ev=EV[e.id]; return pre+(e.role==='orchestrator'?'orchestrator':e.role||'agent')+(ev&&ev.h?' · '+trunc(ev.h.name,14):''); }
+  if(e.kind==='harness'){ const h=outE(G,e.id,'hosted_on'); return pre+'harness · '+(h.length?h.map(x=>x.zone==='vps'?'VPS':x.zone==='local'?'local':x.name).join('+'):'location ?'); }
+  if(e.kind==='model'){ const n=inR(G,e.id,'grants').length; return pre+'model family · '+(n?`via ${n} plan${n>1?'s':''}`:'no access'); }
+  if(e.kind==='access'){ const u=USE[e.id]; return pre+'access'+(u?` · ${u.agents.length} agent${u.agents.length===1?'':'s'}`:''); }
+  if(e.kind==='host') return pre+'host · '+(e.zone==='vps'?'always on':e.zone||'');
+  return pre+KINDS[e.kind].label+(e.prov==='inferred'?' · inferred':'');
+}
+
+function computeFocus(){
+  FOCUS=null;
+  if(state.spot){ FOCUS={ids:new Set(state.spot),rels:new Set(G.live.filter(r=>state.spot.includes(r.from)&&state.spot.includes(r.to)).map(r=>r.id))}; return; }
+  if(state.iso){ const ids=new Set(G.list.filter(e=>e.kind===state.iso).map(e=>e.id)); FOCUS={ids,rels:new Set()}; return; }
+  const id=state.sel; if(!id||!G.ents[id]) return;
+  const ids=new Set([id]), rels=new Set(), e=G.ents[id];
+  const walk=(start,dir)=>{ const q=[start], seen=new Set([start]); while(q.length){ const x=q.shift(); for(const r of G.live){ const [dn,dy]=depPair(r); const from=dir==='down'?dn:dy, to=dir==='down'?dy:dn; if(from!==x) continue; rels.add(r.id); ids.add(to); if(!seen.has(to)){ seen.add(to); q.push(to);} } } };
+  const chain=(aid,seen=new Set())=>{ if(seen.has(aid)) return; seen.add(aid); ids.add(aid); const ev=evalAgent(G,G.ents[aid]);
+    for(const r of [ev.hR,ev.pR,ev.fR]) if(r){ rels.add(r.id); ids.add(r.to); }
+    for(const p of [...ev.paths,...ev.fpaths]){ rels.add(p.g.id); rels.add(p.a.id); ids.add(p.acc.id); }
+    for(const r of G.live) if(r.from===aid&&['hosted_on','uses_tool','connects_mcp','uses_memory','tracks_in'].includes(r.type)){ rels.add(r.id); ids.add(r.to); }
+    if(ev.h) for(const r of outR(G,ev.h.id,'hosted_on')){ rels.add(r.id); ids.add(r.to); }
+    for(const r of G.live) if(r.from===aid&&(r.type==='delegates_to'||r.type==='review_by')){ rels.add(r.id); chain(r.to,seen); } };
+  if(e.kind==='agent'){ walk(id,'up'); chain(id); }
+  else if(e.kind==='access'){
+    for(const r of outR(G,id)){ rels.add(r.id); ids.add(r.to); }
+    for(const a of (USE[id]?.agents||[])){ const ev=evalAgent(G,a); ids.add(a.id); for(const r of [ev.hR,ev.pR,ev.fR]) if(r&&(ids.has(r.to))) rels.add(r.id); walk(a.id,'up'); }
+  } else { walk(id,'up'); walk(id,'down'); }
+  FOCUS={ids,rels};
+}
+
+function render(opt={}){
+  G=materialize(state.scn);
+  EV={}; for(const a of G.list) if(a.kind==='agent'&&!a.removed) EV[a.id]=evalAgent(G,a);
+  USE=accessUse(G);
+  if(state.sel&&!G.ents[state.sel]) state.sel=null;
+  computeFocus();
+  const kind=state.lens==='infra'?'infra':'arch';
+  LAY = kind==='infra'?layoutInfra(G):layoutArch(G);
+  const pins=state.pins[kind]; const target={};
+  for(const id in LAY.pos) target[id]=pins[id]?{...pins[id]}:LAY.pos[id];
+  svg.classList.toggle('draft',state.scn!=='current');
+  drawDeco(); drawNodes();
+  if(opt.animate && Object.keys(POS).length) animateTo(target); else { POS=target; place(); }
+  if(opt.fit) requestAnimationFrame(fit);
+  renderBrief(); renderInspector(); renderOverlays();
+  save();
+}
+
+function drawDeco(){
+  const d=LAY.deco; let h='';
+  if(d.type==='arch'){
+    for(const l of d.lanes){ h+=`<g class="lane"><rect x="${l.x-16}" y="0" width="${W+32}" height="${d.laneH}" rx="12"/><text class="t" x="${l.x}" y="30">${esc(l.t)}</text><text class="c" x="${l.x+W}" y="30" text-anchor="end">${l.n}</text><text class="s" x="${l.x}" y="50">${esc(l.s)}</text></g>`; }
+    for(let i=0;i<d.lanes.length-1;i++){ const x=d.lanes[i].x+W+16, x2=d.lanes[i+1].x-16; h+=`<path class="flowhint" d="M${x+6} 26h${x2-x-12} m-4 -3 l4 3 -4 3"/>`; }
+    for(const b of d.bands){ h+=`<g class="lane"><rect x="${b.x-16}" y="${b.y-58}" width="${b.w+32}" height="${b.rows*RY+64}" rx="12"/><text class="t" x="${b.x}" y="${b.y-30}">${esc(b.t)}</text><text class="s" x="${b.x+W+18}" y="${b.y-30}">${esc(b.s)}</text></g>`; }
+  } else {
+    for(const z of d.zones){
+      const sel=state.sel===z.id;
+      h+=`<g class="zone${z.dashed?' dashed':''}${z.host?' host':''}${sel?' sel':''}" ${z.host?`data-zone="${z.id}"`:''}><rect class="z" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="14"/>
+        <text class="t" x="${z.x+22}" y="${z.y+30}">${esc(z.t.toUpperCase())}</text>
+        ${z.cost?`<text class="cost" x="${z.x+z.w-20}" y="${z.y+31}" text-anchor="end">${money(z.cost.amount)}</text>`:''}
+        <text class="s" x="${z.x+22}" y="${z.y+48}">${esc(trunc(z.s||'',Math.floor(z.w/6.4)))}</text>
+        ${z.empty?`<text class="e" x="${z.x+22}" y="${z.y+92}">${z.host?'Nothing mapped here yet':'Empty'}</text>`:''}</g>`;
+    }
+  }
+  gDeco.innerHTML=h;
+}
+
+function nodeClass(e){
+  const c=['node','k-'+e.kind];
+  if(e.kind==='person') c.push('person');
+  if(e.origin!=='current') c.push('planned');
+  if(e.removed) c.push('removed');
+  if(state.sel===e.id) c.push('sel');
+  if(FOCUS){ if(FOCUS.ids.has(e.id)){ if(state.sel!==e.id) c.push('fx'); } else c.push('dim'); }
+  if(state.lens==='econ'&&!FOCUS){ if(e.kind==='access'||e.kind==='host') c.push('econ-key'); else if(!['model','harness','agent'].includes(e.kind)) c.push('econ-dim'); }
+  if(e.kind==='access'&&USE[e.id]&&!USE[e.id].agents.length&&state.lens==='econ') c.push('idle');
+  return c.join(' ');
+}
+function drawNodes(){
+  const infra=LAY.kind==='infra'; let h='';
+  for(const e of G.list){
+    if(infra&&e.kind==='host') continue;
+    if(!LAY.pos[e.id]) continue;
+    const ev=EV[e.id];
+    let dot='';
+    if(e.kind==='agent'&&ev) dot=`<circle class="dot ${ev.status}" cx="${W-12}" cy="13" r="3"/>`;
+    if(e.kind==='harness'&&!e.removed&&!inR(G,e.id,'authorizes').length) dot=`<circle class="dot warn" cx="${W-12}" cy="13" r="3"/>`;
+    const cost=e.cost?`<text class="cost${e.cost.amount==null?' u':''}" x="${W-12}" y="24" text-anchor="end">${money(e.cost.amount)}</text>`:'';
+    h+=`<g class="${nodeClass(e)}" data-id="${e.id}" tabindex="0" role="button" aria-label="${esc(KINDS[e.kind].label+': '+e.name)}">
+      <rect class="nb" width="${W}" height="${H}" rx="8"/>
+      <g class="gl" transform="translate(13 18)"><path d="${GLYPH[e.kind]}"/></g>
+      <text class="nm" x="38" y="23">${esc(trunc(e.name,e.cost?14:19))}</text>
+      <text class="sb" x="38" y="39">${esc(trunc(subLabel(e),21))}</text>
+      ${e.removed?`<line class="strike" x1="38" x2="${Math.min(38+e.name.length*7.2,W-14)}" y1="19" y2="19"/>`:''}
+      ${dot}${cost}
+      ${state.scn!=='current'&&!e.removed?`<circle class="port" cx="${W}" cy="${H/2}" r="5"/>`:''}
+    </g>`;
+  }
+  gNodes.innerHTML=h;
+}
+function place(){
+  for(const g of gNodes.children){ const p=POS[g.dataset.id]; if(p) g.setAttribute('transform',`translate(${p.x} ${p.y})`); }
+  drawEdges();
+}
+function anchor(a,b){
+  const ax=a.x+W/2, ay=a.y+H/2, bx=b.x+W/2, by=b.y+H/2, dx=bx-ax, dy=by-ay;
+  if(Math.abs(dx)<W*0.6){ // same column: arc out to the left side
+    const x1=a.x, x2=b.x, bend=Math.min(90,30+Math.abs(dy)*0.25);
+    return `M${x1} ${ay} C${x1-bend} ${ay} ${x2-bend} ${by} ${x2} ${by}`;
+  }
+  if(Math.abs(dx)>=Math.abs(dy)*0.9){
+    const s=dx>0?1:-1, x1=ax+s*W/2, x2=bx-s*W/2, m=(x2-x1)/2;
+    return `M${x1} ${ay} C${x1+m} ${ay} ${x2-m} ${by} ${x2} ${by}`;
+  }
+  const s=dy>0?1:-1, y1=ay+s*H/2, y2=by-s*H/2, m=(y2-y1)/2;
+  return `M${ax} ${y1} C${ax} ${y1+m} ${bx} ${y2-m} ${bx} ${y2}`;
+}
+function drawEdges(){
+  const infra=LAY.kind==='infra'; let h='', labels='';
+  const used=new Set();
+  if(state.lens==='econ') for(const a of Object.values(EV)){ for(const p of [...a.paths,...a.fpaths]){ used.add(p.g.id); used.add(p.a.id); } if(a.hR) used.add(a.hR.id); if(a.pR) used.add(a.pR.id); if(a.fR) used.add(a.fR.id); }
+  const flowLit=state.flow?.lit||new Set();
+  for(const r of G.rels){
+    if(infra&&r.type==='hosted_on') continue;
+    const a=POS[r.from], b=POS[r.to]; if(!a||!b) continue;
+    const c=['edge'];
+    if(r.removed||r.dead) c.push('gone'); else if(r.origin!=='current') c.push('planned'); else if(r.prov==='inferred') c.push('inferred');
+    if(flowLit.has(r.id)) c.push('lit');
+    else if(FOCUS){ if(FOCUS.rels.has(r.id)) c.push('hl'); else c.push('dim'); }
+    else if(state.flow) c.push('dim');
+    else if(used.has(r.id)) c.push('used');
+    if(infra&&!c.includes('hl')&&!c.includes('lit')) c.push('infra');
+    const d=anchor(a,b);
+    h+=`<path id="p-${r.id}" class="${c.join(' ')}" d="${d}"/>`;
+    if(r.volatile&&!r.removed&&!r.dead){ const mx=(a.x+b.x+W)/2, my=(a.y+b.y+H)/2; labels+=`<g transform="translate(${mx} ${my})"><path class="vmark" d="M0 -6 L6 5 H-6Z"/><title>${esc(r.volatile)}</title></g>`; }
+    if(state.sel&&(r.from===state.sel||r.to===state.sel)&&!r.dead&&!r.removed){
+      const mx=(a.x+b.x+W)/2, my=(a.y+b.y+H)/2-6;
+      labels+=`<text class="elabel" x="${mx}" y="${my}" text-anchor="middle">${esc(REL[r.type].verb+(r.fallback?' (fallback)':''))}</text>`;
+    }
+  }
+  gEdges.innerHTML=h+labels;
+}
+
+function animateTo(target){
+  const from={...POS}; const t0=performance.now(), D=matchMedia('(prefers-reduced-motion: reduce)').matches?0:520;
+  const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  const step=now=>{ const t=D?Math.min(1,(now-t0)/D):1, k=ease(t);
+    POS={}; for(const id in target){ const a=from[id]||target[id], b=target[id]; POS[id]={x:a.x+(b.x-a.x)*k,y:a.y+(b.y-a.y)*k}; }
+    place(); if(t<1) requestAnimationFrame(step); else { POS=target; place(); } };
+  requestAnimationFrame(step);
+}
+
+/* view transform */
+function applyVP(){ vp.setAttribute('transform',`translate(${view.x} ${view.y}) scale(${view.k})`); $('#bgdots').setAttribute('transform',`translate(${view.x%22} ${view.y%22})`); svg.classList.toggle('far',view.k<0.58); }
+function bounds(){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const id in POS){ const p=POS[id]; x0=Math.min(x0,p.x); y0=Math.min(y0,p.y); x1=Math.max(x1,p.x+W); y1=Math.max(y1,p.y+H); }
+  if(LAY.deco.type==='arch'){ y0=Math.min(y0,0); x0-=16; x1+=16; y1+=10; }
+  else for(const z of LAY.deco.zones){ x0=Math.min(x0,z.x); y0=Math.min(y0,z.y); x1=Math.max(x1,z.x+z.w); y1=Math.max(y1,z.y+z.h); }
+  return {x0,y0,x1,y1};
+}
+function fit(){
+  const r=svg.getBoundingClientRect(); if(!r.width) return;
+  const b=bounds(); const padTop=state.scn!=='current'||state.lens==='econ'?70:30, padBot=state.lens==='flow'?190:60;
+  const k=Math.max(.3,Math.min(1.15,(r.width-60)/(b.x1-b.x0),(r.height-padTop-padBot)/(b.y1-b.y0)));
+  view.k=k; view.x=(r.width-(b.x1-b.x0)*k)/2-b.x0*k; view.y=padTop+((r.height-padTop-padBot)-(b.y1-b.y0)*k)/2-b.y0*k; applyVP();
+}
+function centerOn(id){ const p=POS[id]; if(!p) return; const r=svg.getBoundingClientRect(); view.k=Math.max(view.k,.8); view.x=r.width/2-(p.x+W/2)*view.k; view.y=r.height/2-(p.y+H/2)*view.k; applyVP(); }
+
+/* =====================================================================
+   8. PANELS
+   ===================================================================== */
+function scnOptions(){
+  const s=$('#scnSel'); s.innerHTML=`<option value="current">Current · reality</option>`+DB.scenarios.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')+`<option value="__new">+ New draft from current</option>`+(state.scn!=='current'?`<option value="__fork">+ Duplicate this draft</option>`:'');
+  s.value=state.scn;
+}
+function renderBrief(){
+  const sc=state.scn==='current'?null:scenario(state.scn);
+  const I=insights(G); const top=I[0]; const c=costs(G);
+  const counts={}; for(const e of G.alive) counts[e.kind]=(counts[e.kind]||0)+1;
+  const planned={}; for(const e of G.alive) if(e.origin==='planned') planned[e.kind]=(planned[e.kind]||0)+1;
+  let h=`<section class="b-sec"><div class="eyebrow"><span>${sc?'Draft':'Reality'}</span><span>${sc?esc(sc.author||''):''}</span></div>
+    <h1 class="scn-name">${sc?esc(sc.name):'Current architecture'}</h1>
+    <p class="scn-desc">${sc?esc(sc.desc||'A change-set on top of '+(sc.parent==='current'?'current':scenario(sc.parent)?.name)+'. Nothing here is real until you apply it.'):'Only what you stated, what vendors document, and marked inferences. Unknowns stay unknown.'}</p>
+    <div class="legend-line"><span><i></i>current</span>${sc?'<span><i class="dash"></i>proposed</span>':''}<span><i class="dot"></i>inferred</span></div>
+    ${sc?`<div class="row" style="margin-top:12px"><button class="btn" data-act="compare" aria-pressed="${state.compare}">${state.compare?'Hide comparison':'Compare with '+(sc.parent==='current'?'current':'parent')}</button>${sc.id!=='draftA'?'<button class="btn ghost" data-act="deldraft">Delete draft</button>':''}</div>`:''}
+  </section>`;
+  if(sc&&state.compare){
+    const d=diffOf(sc.id); const dc=d.c1.known-d.c0.known;
+    h+=`<section class="b-sec"><div class="eyebrow"><span>What changes</span></div><div class="diff">
+      <div class="diff-row"><span>Adds</span><div class="tags">${d.added.length?d.added.map(e=>chip(e)).join(''):'<span class="miss">nothing</span>'}</div></div>
+      <div class="diff-row"><span>Removes</span><div class="tags">${d.removed.length?d.removed.map(e=>chip(e)).join(''):'<span class="miss">nothing</span>'}</div></div>
+      <div class="diff-row"><span>Links</span><div><span class="plus">+${d.rAdd}</span> &nbsp; <span class="minus">−${d.rDel}</span></div></div>
+      <div class="diff-row"><span>Agents</span><div>${d.ok} run as configured${d.bad?`, <span class="minus">${d.bad} don’t</span>`:''}</div></div>
+      <div class="diff-row"><span>Cost</span><div>${dc?(dc>0?'+':'−')+money(Math.abs(dc))+'/mo known':'No change in recorded cost'}${d.c1.unknown.length!==d.c0.unknown.length?` · ${d.c1.unknown.length-d.c0.unknown.length>0?'+':''}${d.c1.unknown.length-d.c0.unknown.length} unpriced`:''}</div></div>
+      <div class="diff-row"><span>New risks</span><div>${d.newI.length?d.newI.map(i=>`<div style="margin-bottom:4px">${esc(i.title)}</div>`).join(''):'<span class="miss">none</span>'}</div></div>
+    </div></section>`;
+  }
+  h+=`<section class="b-sec"><div class="eyebrow"><span>Build next</span></div><div class="next">
+      <h3>${esc(top.title)}</h3><p>${esc(top.body)}</p><p class="do">${esc(top.next)}</p>
+      ${top.act?`<button class="btn primary" data-act="goto" data-scn="${top.act}">Open Draft A</button>`:`<button class="btn" data-spot="${top.ids.join(',')}">Show on map</button>`}
+    </div></section>`;
+  h+=`<section class="b-sec"><div class="eyebrow"><span>What you have</span><span>${G.alive.length}</span></div><div class="inv">${KIND_ORDER.filter(k=>k!=='person').map(k=>`<button data-iso="${k}" aria-pressed="${state.iso===k}"><span>${KINDS[k].plural}</span><b>${(counts[k]||0)-(planned[k]||0)}${planned[k]?`<small>+${planned[k]}</small>`:''}</b></button>`).join('')}</div></section>`;
+  const pct=c.unknown.length+c.n;
+  h+=`<section class="b-sec"><div class="eyebrow"><span>Monthly cost</span><span>${c.n} of ${pct} recorded</span></div>
+    <div class="cost-big"><span class="fig num">${c.n?money(c.known):'$ ?'}</span><span class="per">/ month known</span></div>
+    <p class="cost-note">${c.unknown.length?`<b>${plural(c.unknown.length,'cost')} unknown.</b> `:''}Flat plans are capped by quota windows, not dollars, so the scarce resource is usage headroom. Atlas will track both once a usage source is connected.</p></section>`;
+  h+=`<section class="b-sec"><div class="eyebrow"><span>Findings</span><span>${I.length}</span></div><ul class="find">${I.map(i=>`<li><button data-spot="${i.ids.join(',')}" aria-pressed="${state.spot&&state.spot.join(',')===i.ids.join(',')}"><i class="sq sev-${i.sev}"></i><div><strong>${esc(i.title)}</strong><span>${esc(i.body)}</span></div></button></li>`).join('')}</ul></section>`;
+  $('#brief').innerHTML=h;
+}
+function chip(e,extra=''){ if(!e) return ''; return `<button class="chip${e.origin!=='current'?' planned':''}" data-go="${e.id}">${glyph(e.kind)}${esc(e.name)}${extra}</button>`; }
+const chips=(l,empty='not configured')=>l.length?l.map(e=>chip(e)).join(''):`<span class="miss">${empty}</span>`;
+function provPills(e){
+  let h=`<span class="pill ${e.origin!=='current'?'proposed':e.prov}">${esc(e.origin==='planned'?'Proposed in this draft':e.origin==='inherited'?'Proposed in parent draft':PROV[e.prov]||e.prov)}</span>`;
+  if(e.removed) h+=`<span class="pill removed">Removed in this draft</span>`;
+  if(e.changed) h+=`<span class="pill proposed">Changed: ${esc(e.changed.join(', '))}</span>`;
+  return h;
+}
+
+function renderInspector(){
+  const insp=$('#insp'); const e=state.sel&&G.ents[state.sel];
+  if(!e){ insp.hidden=true; return; }
+  insp.hidden=false;
+  const draft=state.scn!=='current'; const k=e.kind;
+  let h=`<div class="i-head"><div class="eyebrow">${esc(KINDS[k].label)}</div>
+    <button class="icon-btn i-close" data-act="close" aria-label="Close">×</button>
+    ${draft&&!e.removed?`<input id="nm" class="i-name" value="${esc(e.name)}" aria-label="Name">`:`<h2 class="i-name">${esc(e.name)}</h2>`}
+    <div>${provPills(e)}${k==='agent'&&EV[e.id]?`<span class="pill ${EV[e.id].status}">${EV[e.id].status==='ok'?'Runs as configured':EV[e.id].status==='broken'?'Can’t run':'Incomplete'}</span>`:''}</div>
+    ${e.summary?`<p class="i-sum">${esc(e.summary)}</p>`:''}</div>`;
+
+  if(k==='agent') h+=agentContext(e);
+  if(k==='access'){
+    const u=USE[e.id]||{agents:[],sole:[]};
+    h+=`<div class="i-sec"><span class="eyebrow">What it unlocks</span><dl class="kv"><dt>Grants</dt><dd>${chips(outE(G,e.id,'grants'))}</dd><dt>Usable in</dt><dd>${chips(outE(G,e.id,'authorizes'))}</dd>
+      <dt>Agents on it</dt><dd>${chips(u.agents,'none configured')}</dd><dt>Only path for</dt><dd>${chips(u.sole,'no agent')}</dd></dl>
+      ${u.sole.length?`<p class="hint">Removing it stops ${names(u.sole)}.</p>`:''}</div>`;
+  }
+  if(k==='harness'){
+    const reach=[]; for(const a of inE(G,e.id,'authorizes')) for(const m of outE(G,a.id,'grants')) reach.push(`${chip(m)}<span class="hint" style="display:inline">via ${esc(a.name)}</span><br>`);
+    h+=`<div class="i-sec"><span class="eyebrow">Capability</span><dl class="kv"><dt>Reaches</dt><dd>${reach.length?reach.join(''):'<span class="miss">no model — no access plan linked</span>'}</dd>
+      <dt>Agents inside</dt><dd>${chips(inE(G,e.id,'runs_in'),'none')}</dd><dt>Runs on</dt><dd>${chips(outE(G,e.id,'hosted_on'),'not recorded')}</dd>
+      <dt>Entry</dt><dd>${chips(inE(G,e.id,'routes_to'),'none')}</dd><dt>Memory</dt><dd>${chips(outE(G,e.id,'uses_memory'),'none')}</dd></dl></div>`;
+  }
+  if(k==='model'){
+    const hs=[]; for(const a of inE(G,e.id,'grants')) for(const x of outE(G,a.id,'authorizes')) hs.push(x);
+    h+=`<div class="i-sec"><span class="eyebrow">Where it comes from</span><dl class="kv"><dt>Granted by</dt><dd>${chips(inE(G,e.id,'grants'),'no access')}</dd>
+      <dt>Usable in</dt><dd>${chips([...new Set(hs)],'no harness')}</dd><dt>Used by</dt><dd>${chips(inE(G,e.id,'uses_model'),'no agent')}</dd></dl></div>`;
+  }
+  if(k==='host'){
+    const here=inE(G,e.id,'hosted_on'); const ag=G.alive.filter(a=>a.kind==='agent'&&EV[a.id]&&EV[a.id].hosts.some(x=>x.id===e.id));
+    h+=`<div class="i-sec"><span class="eyebrow">Running here</span><dl class="kv"><dt>Components</dt><dd>${chips(here,'nothing mapped')}</dd><dt>Agents</dt><dd>${chips(ag,'none')}</dd></dl>
+      <p class="hint">${e.zone==='vps'?'Later, a discovery agent on this server can report containers, services and MCP servers here automatically.':'Local components can be reported by a small agent on each machine.'}</p></div>`;
+  }
+  if(k==='interface') h+=`<div class="i-sec"><span class="eyebrow">Routing</span><dl class="kv"><dt>Used by</dt><dd>${chips(inE(G,e.id,'reaches'),'no one')}</dd><dt>Routes to</dt><dd>${chips(outE(G,e.id,'routes_to'),'nothing')}</dd></dl></div>`;
+  if(['tool','mcp','memory','project'].includes(k)) h+=`<div class="i-sec"><span class="eyebrow">Who uses it</span><dl class="kv"><dt>Used by</dt><dd>${chips(G.live.filter(r=>r.to===e.id&&r.type!=='hosted_on').map(r=>G.ents[r.from]),'nothing yet')}</dd><dt>Runs on</dt><dd>${e.saas?'Vendor-hosted':chips(outE(G,e.id,'hosted_on'),'not recorded')}</dd></dl></div>`;
+
+  if(e.facts&&e.facts.length) h+=`<div class="i-sec"><span class="eyebrow">Facts</span><dl class="kv">${e.facts.map(f=>`<dt>${esc(f[0])}</dt><dd class="${f[1]==null?'unk':''}">${f[1]==null?'unknown':esc(f[1])}</dd>`).join('')}</dl></div>`;
+  if(e.cost){
+    h+=`<div class="i-sec"><span class="eyebrow">Cost</span><div class="row"><span style="color:var(--ink-3)">$</span><input id="costIn" class="field num" type="number" min="0" step="0.01" style="width:110px" value="${e.cost.amount??''}" placeholder="unknown" aria-label="Monthly cost in USD"><span style="color:var(--ink-3);font-size:13px">per month · ${esc(e.cost.basis)}</span></div>
+      ${e.cost.ref?`<p class="hint">${esc(e.cost.ref)}</p>`:''}<p class="hint">${draft?'Recorded only in this draft.':'Recorded as a fact about your current setup.'}</p></div>`;
+  }
+  const notes=[...(e.notes||[])]; for(const r of G.live) if((r.from===e.id||r.to===e.id)&&r.volatile) notes.push({lvl:'risk',t:r.volatile});
+  if(notes.length) h+=`<div class="i-sec"><span class="eyebrow">Notes</span>${notes.map(n=>`<p class="note ${n.lvl||''}">${esc(n.t)}${n.src?` <a href="${esc(n.src)}" target="_blank" rel="noopener">Source</a>`:''}</p>`).join('')}</div>`;
+
+  const rels=G.rels.filter(r=>r.from===e.id||r.to===e.id);
+  h+=`<div class="i-sec"><span class="eyebrow">Relationships · ${rels.filter(r=>!r.removed&&!r.dead).length}</span><ul class="rels">${rels.map(r=>{ const o=r.from===e.id?G.ents[r.to]:G.ents[r.from]; const verb=r.from===e.id?REL[r.type].verb:'← '+REL[r.type].verb; const gone=r.removed||r.dead;
+      return `<li class="${gone?'gone':''}"><span class="verb">${esc(verb)}${r.fallback?' (fallback)':''}</span><span>${chip(o)}</span>${draft&&!r.dead?(r.removed?`<button class="x" data-relink="${r.id}" title="Restore">↺</button>`:`<button class="x" data-unlink="${r.id}" title="Disconnect in this draft" aria-label="Disconnect">×</button>`):'<span></span>'}</li>`; }).join('')}</ul>
+    ${draft&&!e.removed?connectUI(e):''}</div>`;
+  h+=`<div class="i-sec"><div class="row">${draft?(e.removed?`<button class="btn" data-act="restore">Restore</button>`:`<button class="btn" data-act="remove">${e.origin==='planned'?'Delete from draft':'Remove in this draft'}</button>`):''}
+     ${!e.removed&&e.kind!=='person'?`<button class="btn" data-act="whatif">What if I remove it?</button>`:''}</div>
+     ${!draft?'<p class="hint">Reality is read-only here except costs. Structural changes happen in drafts so you can compare before committing.</p>':''}</div>`;
+  const rec={entity:Object.fromEntries(Object.entries(e).filter(([k])=>!['origin','removedHere'].includes(k))),relations:rels.map(r=>({id:r.id,type:r.type,from:r.from,to:r.to,prov:r.prov,...(r.fallback?{fallback:true}:{}),...(r.volatile?{volatile:true}:{})}))};
+  h+=`<div class="i-sec"><details class="rec"><summary class="eyebrow">Record ▸ what the map is drawn from</summary><pre>${esc(JSON.stringify(rec,null,2))}</pre></details></div>`;
+  insp.innerHTML=h;
+}
+function connectUI(e){
+  const opts=[];
+  for(const t of G.alive){ if(t.id===e.id) continue; const inf=inferRel(e.kind,t.kind); if(!inf) continue;
+    const [f,to]=inf.swap?[t,e]:[e,t]; if(G.live.some(r=>r.type===inf.type&&r.from===f.id&&r.to===to.id)) continue;
+    opts.push(`<option value="${t.id}">${esc((inf.swap?'← '+REL[inf.type].verb:REL[inf.type].verb)+' · '+t.name)}</option>`); }
+  if(!opts.length) return '';
+  return `<div class="row" style="margin-top:10px"><select id="cx" class="sel field" style="flex:1" aria-label="Connect to"><option value="">Connect to…</option>${opts.join('')}</select></div><p class="hint">Or drag from the node’s right edge onto another node.</p>`;
+}
+function agentContext(a){
+  const ev=EV[a.id]; if(!ev) return '';
+  const from=[...inE(G,a.id,'routes_to'),...inE(G,a.id,'delegates_to'),...inE(G,a.id,'review_by')];
+  const to=outR(G,a.id).filter(r=>r.type==='delegates_to'||r.type==='review_by');
+  const reviewed=outE(G,a.id,'review_by');
+  const cap=t=>outE(G,a.id,t);
+  const pathTxt=ev.paths.length?ev.paths.map(p=>chip(p.acc,p.acc.cost?` <span class="mono" style="color:var(--ink-3)">${money(p.acc.cost.amount)}</span>`:'')).join(''):`<span class="miss">${ev.h&&ev.m?'no plan covers this pair':'needs harness and model'}</span>`;
+  const verdict=ev.status==='ok'?`<div class="verdict ok"><b>Runs as configured.</b> ${esc(ev.h.name)} reaches ${esc(ev.m.name)} through ${esc(names(ev.paths.map(p=>p.acc)))}.${ev.iss.length?' '+esc(ev.iss.map(i=>i.t).join('. '))+'.':''}</div>`
+    :`<div class="verdict ${ev.status}">${ev.iss.map(i=>`<div>${i.lvl==='broken'?'<b>Blocked:</b> ':''}${esc(i.t)}</div>`).join('')}</div>`;
+  return `<div class="ctx">
+    ${a.duties?`<span class="eyebrow">Responsible for</span><ul class="duties" style="margin:8px 0 16px">${a.duties.map(d=>`<li>${esc(d)}</li>`).join('')}</ul>`:''}
+    <span class="eyebrow">Operating context</span>
+    <div class="ctx-flow" style="margin-top:10px">
+      <div class="ctx-io"><span class="lbl">Work from</span><div>${chips(from,'nobody yet')}</div></div>
+      <div class="ctx-core"><b>${esc(a.name)}</b><span>${esc(a.role||'agent')}${ev.hosts.length?' · on '+esc(names(ev.hosts)):''}</span></div>
+      <div class="ctx-io"><span class="lbl">Hands to</span><div>${to.length?to.map(r=>chip(G.ents[r.to],r.type==='review_by'?' <span style="color:var(--ink-3)">review</span>':'')).join(''):'<span class="miss">returns to caller</span>'}</div></div>
+    </div>
+    <ol class="stack">
+      <li class="${ev.h?'ok':'bad'}"><span class="lbl lbl-side">Runs in</span>${ev.h?chip(ev.h):'<span class="miss">no harness</span>'}<span class="fbk">${ev.hosts.length?'on '+esc(names(ev.hosts)):'location not recorded'}</span></li>
+      <li class="${ev.m?'ok':'bad'}"><span class="lbl lbl-side">Thinks with</span>${ev.m?chip(ev.m):'<span class="miss">no model</span>'}<span class="fbk">${ev.fb?'fallback: '+esc(ev.fb.name)+(ev.fpaths.length?'':' (unreachable)'):'no fallback'}</span></li>
+      <li class="${ev.paths.length?'ok':'bad'}"><span class="lbl lbl-side">Paid via</span>${pathTxt}</li>
+    </ol>
+    <div class="caps">
+      <span class="lbl">Tools</span><div>${chips([...cap('uses_tool'),...cap('connects_mcp')],'none')}</div>
+      <span class="lbl">Memory</span><div>${chips(cap('uses_memory'),'none')}</div>
+      <span class="lbl">Tracks in</span><div>${chips(cap('tracks_in'),'none')}</div>
+      <span class="lbl">Review</span><div>${reviewed.length?chips(reviewed):'<span class="miss">no reviewer</span>'}</div>
+    </div>
+    ${verdict}
+  </div>`;
+}
+
+function renderOverlays(){
+  const sc=state.scn==='current'?null:scenario(state.scn);
+  const b=$('#banner');
+  if(sc){ const n=sc.ops.length; b.hidden=false; b.innerHTML=`<b>Draft</b><span class="txt">${esc(sc.name)} · ${plural(n,'change')} over ${sc.parent==='current'?'current':esc(scenario(sc.parent)?.name||'parent')}</span><button class="btn" data-act="compare" aria-pressed="${state.compare}">${state.compare?'Comparing':'Compare'}</button><button class="btn ghost" data-act="goto" data-scn="current">Back to reality</button>`; }
+  else b.hidden=true;
+  const ec=$('#econ');
+  if(state.lens==='econ'){ const c=costs(G); const idle=Object.entries(USE).filter(([,u])=>!u.agents.length).length; ec.hidden=false; b.hidden=true;
+    ec.innerHTML=`<div><span class="eyebrow">Known / mo</span><span class="fig num">${c.n?money(c.known):'$ ?'}</span></div><div><span class="eyebrow">Unpriced</span><span class="fig u num">${c.unknown.length}</span></div><div><span class="eyebrow">Plans powering no agent</span><span class="fig num">${idle}</span></div><div><span class="eyebrow">Usage data</span><span class="fig u" style="font-size:16px;padding-top:4px">NOT CONNECTED</span></div>`; }
+  else ec.hidden=true;
+  const fb=$('#flowbar'), em=$('#emptyMsg');
+  if(state.lens==='flow'){
+    if(!G.wfs.length){ fb.hidden=true; em.hidden=false; em.innerHTML=`<p>Workflows describe how components collaborate. Reality has no agents yet, so there is nothing to run.</p><button class="btn primary" data-act="goto" data-scn="draftA">See flows in Draft A</button>`; }
+    else { em.hidden=true; fb.hidden=false; if(!G.wfs.find(w=>w.id===state.wf)) state.wf=G.wfs[0].id; renderFlowbar(); }
+  } else { fb.hidden=true; em.hidden=true; }
+  $('#compareBtn').hidden=!sc; $('#compareBtn').setAttribute('aria-pressed',state.compare);
+  $('#addBtn').title=sc?'Add a component to this draft':'Adding happens in a draft';
+}
+function wfStepStatus(id){ const e=G.ents[id]; if(!e||e.removed) return 'bad'; if(e.kind==='agent'&&EV[id]?.status==='broken') return 'bad'; return ''; }
+function renderFlowbar(){
+  const wf=G.wfs.find(w=>w.id===state.wf); const f=state.flow;
+  const broken=wf.steps.some(s=>wfStepStatus(s[0])==='bad');
+  $('#flowbar').innerHTML=`<div class="fb-top"><div class="fb-tabs">${G.wfs.map(w=>`<button data-wf="${w.id}" aria-pressed="${w.id===state.wf}">${esc(w.name)}</button>`).join('')}</div><div class="spacer"></div>
+    <button class="btn ${f?'':'primary'}" data-act="play">${f?'Stop':'▶ Run task'}</button></div>
+    <div class="fb-steps">${wf.steps.map((s,i)=>{ const e=G.ents[s[0]]; const st=wfStepStatus(s[0]); const cl=st==='bad'?'bad':f?(i<f.i?'done':i===f.i?'now':''):''; return `<div class="step ${cl}"><span class="n">${String(i+1).padStart(2,'0')}</span><b>${esc(e?e.name:'missing')}</b><span>${esc(s[1])}</span></div>`; }).join('')}</div>
+    <div class="fb-res">${broken?'<b style="color:var(--bad)">This flow is broken in this draft.</b> A step is removed or can’t run.':f&&f.done?`<b>Result.</b> ${esc(wf.result)}`:f&&f.note?esc(f.note):'Run the task to watch it travel. Each agent step also lights the harness, model and plan it draws on.'}</div>`;
+}
+
+/* flow playback */
+function relBetween(a,b){ return G.live.find(r=>(r.from===a&&r.to===b)||(r.from===b&&r.to===a)); }
+function runChain(id){ const s=new Set(), rl=new Set(); const ev=EV[id]; if(!ev) return {s,rl};
+  if(ev.h){ s.add(ev.h.id); rl.add(ev.hR.id); } if(ev.m){ s.add(ev.m.id); rl.add(ev.pR.id); }
+  for(const p of ev.paths){ s.add(p.acc.id); rl.add(p.g.id); rl.add(p.a.id); } return {s,rl}; }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function playFlow(){
+  const wf=G.wfs.find(w=>w.id===state.wf); if(!wf) return;
+  const token={}; state.flow={i:0,token,lit:new Set(),done:false}; state.sel=null; state.spot=null; FOCUS=null;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const paint=(extra=new Set())=>{ const f=state.flow; if(!f) return;
+    const steps=wf.steps.map(s=>s[0]); const reached=new Set(steps.slice(0,f.i+1)); const active=steps[f.i];
+    for(const g of gNodes.children){ const id=g.dataset.id; g.classList.remove('dim','fx','sel','reached','active','chain');
+      if(id===active) g.classList.add('active'); else if(reached.has(id)) g.classList.add('reached'); else if(extra.has(id)) g.classList.add('chain'); else g.classList.add('dim'); }
+    drawEdges(); renderFlowbar(); };
+  paint();
+  for(let i=0;i<wf.steps.length;i++){
+    if(state.flow?.token!==token) return;
+    state.flow.i=i; const id=wf.steps[i][0]; const ch=runChain(id);
+    ch.rl.forEach(r=>state.flow.lit.add(r)); paint(ch.s);
+    state.flow.note=G.ents[id]?.kind==='agent'&&EV[id]?`${G.ents[id].name} draws on ${[EV[id].h?.name,EV[id].m?.name,EV[id].paths[0]?.acc.name].filter(Boolean).join(' · ')}`:'';
+    renderFlowbar();
+    await sleep(reduce?500:ch.s.size?900:420);
+    ch.rl.forEach(r=>state.flow?.lit.delete(r));
+    if(i<wf.steps.length-1){ const nx=wf.steps[i+1][0]; const r=relBetween(id,nx); if(r) state.flow.lit.add(r.id); paint(); await travel(id,nx,r,reduce); }
+  }
+  if(state.flow?.token===token){ state.flow.done=true; state.flow.i=wf.steps.length; paint(); renderFlowbar(); }
+}
+function travel(a,b,r,reduce){
+  return new Promise(res=>{
+    if(reduce) return setTimeout(res,200);
+    let path=r&&document.getElementById('p-'+r.id), tmp=null, rev=r&&r.from===b;
+    if(!path){ const pa=POS[a],pb=POS[b]; if(!pa||!pb) return res(); tmp=document.createElementNS(NS,'path'); tmp.setAttribute('d',anchor(pa,pb)); tmp.setAttribute('class','tmpline'); gSig.appendChild(tmp); path=tmp; rev=false; }
+    const len=path.getTotalLength(); const D=Math.max(450,Math.min(1100,len*2.1));
+    const halo=document.createElementNS(NS,'circle'); halo.setAttribute('r',9); halo.setAttribute('class','sig-halo'); halo.setAttribute('filter','url(#bigglow)');
+    const trail=[0,1,2,3].map(i=>{ const c=document.createElementNS(NS,'circle'); c.setAttribute('r',3.2-i*.6); c.setAttribute('class','sig'); c.setAttribute('opacity',1-i*.22); return c; });
+    gSig.appendChild(halo); trail.forEach(c=>gSig.appendChild(c));
+    const t0=performance.now();
+    const step=now=>{ const t=Math.min(1,(now-t0)/D); const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+      trail.forEach((c,i)=>{ const tt=Math.max(0,e-i*.035); const p=path.getPointAtLength((rev?1-tt:tt)*len); c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); if(i===0){ halo.setAttribute('cx',p.x); halo.setAttribute('cy',p.y);} });
+      if(t<1&&state.flow) requestAnimationFrame(step); else { halo.remove(); trail.forEach(c=>c.remove()); tmp&&tmp.remove(); res(); } };
+    requestAnimationFrame(step);
+  });
+}
+function stopFlow(){ state.flow=null; gSig.innerHTML=''; }
+
+/* =====================================================================
+   9. ACTIONS — every edit is an op on the active draft.
+   ===================================================================== */
+function inferRel(fk,tk){
+  for(const [t,d] of Object.entries(REL)) if(d.from.includes(fk)&&d.to.includes(tk)) return {type:t,swap:false};
+  for(const [t,d] of Object.entries(REL)) if(d.from.includes(tk)&&d.to.includes(fk)) return {type:t,swap:true};
+  return null;
+}
+function toast(msg,bad){ const t=$('#toast'); t.textContent=msg; t.className='ov toast'+(bad?' bad':''); t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true,3600); }
+const uid=p=>p+'_'+Math.random().toString(36).slice(2,8);
+function needDraft(){ if(state.scn==='current'){ toast('Reality is read-only. Open a draft to change the architecture.'); return true; } return false; }
+function link(fromId,toId){
+  if(needDraft()) return;
+  const a=G.ents[fromId], b=G.ents[toId]; if(!a||!b||a.id===b.id) return;
+  const inf=inferRel(a.kind,b.kind);
+  if(!inf){ toast(REJECT[a.kind+'>'+b.kind]||`Atlas has no relationship from ${KINDS[a.kind].label.toLowerCase()} to ${KINDS[b.kind].label.toLowerCase()}.`,true); return; }
+  const [f,t]=inf.swap?[b,a]:[a,b];
+  if(G.live.some(r=>r.type===inf.type&&r.from===f.id&&r.to===t.id)){ toast('Already connected.'); return; }
+  const sc=scenario(state.scn); const rel={id:uid('r'),type:inf.type,from:f.id,to:t.id,prov:'proposed'};
+  if(inf.type==='uses_model'&&outR(G,f.id,'uses_model').length) rel.fallback=true;
+  if(inf.type==='runs_in'){ for(const r of outR(G,f.id,'runs_in')) unlinkOp(sc,r); }
+  sc.ops.push({op:'link',rel});
+  toast(`${f.name} ${REL[inf.type].verb}${rel.fallback?' (fallback)':''} ${t.name}.`);
+  render();
+}
+function unlinkOp(sc,r){ if(r.origin==='planned'){ sc.ops=sc.ops.filter(o=>!(o.op==='link'&&o.rel.id===r.id)); } else sc.ops.push({op:'unlink',id:r.id}); }
+function removeEntity(id){
+  const sc=scenario(state.scn); const e=G.ents[id];
+  if(e.origin==='planned'){ sc.ops=sc.ops.filter(o=>!(o.op==='add'&&o.entity.id===id)&&!(o.op==='link'&&(o.rel.from===id||o.rel.to===id))); for(const w of sc.workflows||[]) w.steps=w.steps.filter(s=>s[0]!==id); state.sel=null; }
+  else sc.ops.push({op:'remove',id});
+  render();
+}
+function newDraft(parent,name,ops=[]){
+  const n=DB.scenarios.length+1; const id=uid('d');
+  DB.scenarios.push({id,name:name||`Draft ${String.fromCharCode(64+n)}`,parent,author:'You',ops,workflows:[]}); return id;
+}
+function whatIf(id){
+  const e=G.ents[id]; const parent=state.scn;
+  const nid=newDraft(parent,`What if: no ${e.name}`,[{op:'remove',id}]);
+  state.scn=nid; state.compare=true; state.sel=id; stopFlow(); scnOptions(); render();
+  toast(`Forked a draft without ${e.name}. Compare shows what breaks.`);
+}
+function addEntity(kind){
+  if(needDraft()) return;
+  const sc=scenario(state.scn); const id=uid(kind.slice(0,3));
+  const ent={id,kind,name:`New ${KINDS[kind].label.toLowerCase()}`,prov:'proposed'};
+  if(kind==='agent') ent.role='specialist';
+  if(kind==='access') ent.cost={amount:null,basis:'flat'};
+  if(kind==='host'){ ent.zone='vps'; ent.cost={amount:null,basis:'flat'}; }
+  sc.ops.push({op:'add',entity:ent}); state.sel=id; state.spot=null; state.iso=null;
+  render(); requestAnimationFrame(()=>{ centerOn(id); const nm=$('#nm'); if(nm){ nm.focus(); nm.select(); } });
+}
+function setField(id,key,value){
+  if(state.scn==='current'){ const e=DB.base.entities.find(x=>x.id===id); if(e) e[key]=value; render(); return; }
+  const sc=scenario(state.scn); const add=sc.ops.find(o=>o.op==='add'&&o.entity.id===id);
+  if(add) add.entity[key]=value; else { sc.ops=sc.ops.filter(o=>!(o.op==='set'&&o.id===id&&o.key===key)); sc.ops.push({op:'set',id,key,value}); }
+  render();
+}
+
+/* =====================================================================
+   10. INTERACTION
+   ===================================================================== */
+function setLens(l){ if(state.lens===l) return; const wasInfra=state.lens==='infra'; state.lens=l; if(l!=='flow') stopFlow();
+  document.querySelectorAll('#lenses button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lens===l));
+  render({animate:wasInfra!==(l==='infra')}); if(wasInfra!==(l==='infra')) setTimeout(fit,560); else fit(); }
+function select(id,{center}={}){ stopFlow(); state.sel=id; state.spot=null; state.iso=null; render(); if(center) centerOn(id); if(innerWidth<=900) $('#brief').classList.remove('open'); }
+function goScenario(id){ stopFlow(); state.scn=id; state.compare=false; state.spot=null; scnOptions(); render({fit:true}); }
+
+document.addEventListener('click',ev=>{
+  const t=ev.target.closest('[data-go],[data-spot],[data-iso],[data-act],[data-wf],[data-unlink],[data-relink],[data-kind],[data-res]');
+  if(!t) return;
+  if(t.dataset.go) return select(t.dataset.go,{center:true});
+  if(t.dataset.spot!==undefined){ stopFlow(); const ids=t.dataset.spot.split(',').filter(Boolean); const same=state.spot&&state.spot.join(',')===ids.join(','); state.spot=same?null:ids; state.sel=null; state.iso=null; render(); return; }
+  if(t.dataset.iso){ state.iso=state.iso===t.dataset.iso?null:t.dataset.iso; state.spot=null; state.sel=null; render(); return; }
+  if(t.dataset.wf){ stopFlow(); state.wf=t.dataset.wf; render(); return; }
+  if(t.dataset.kind){ $('#addMenu').hidden=true; addEntity(t.dataset.kind); return; }
+  if(t.dataset.res){ $('#results').hidden=true; $('#q').value=''; select(t.dataset.res,{center:true}); return; }
+  if(t.dataset.unlink){ const sc=scenario(state.scn); const r=G.rels.find(r=>r.id===t.dataset.unlink); unlinkOp(sc,r); render(); return; }
+  if(t.dataset.relink){ const sc=scenario(state.scn); sc.ops=sc.ops.filter(o=>!(o.op==='unlink'&&o.id===t.dataset.relink)); render(); return; }
+  const a=t.dataset.act;
+  if(a==='close'){ state.sel=null; render(); }
+  else if(a==='compare'){ state.compare=!state.compare; render(); if(innerWidth<=900&&state.compare) $('#brief').classList.add('open'); }
+  else if(a==='goto') goScenario(t.dataset.scn);
+  else if(a==='remove') removeEntity(state.sel);
+  else if(a==='restore'){ const sc=scenario(state.scn); sc.ops=sc.ops.filter(o=>!(o.op==='remove'&&o.id===state.sel)); render(); }
+  else if(a==='whatif') whatIf(state.sel);
+  else if(a==='play'){ if(state.flow){ stopFlow(); render(); } else playFlow(); }
+  else if(a==='deldraft'){ const id=state.scn; DB.scenarios=DB.scenarios.filter(s=>s.id!==id&&s.parent!==id); goScenario('current'); }
+  else if(a==='reset'){ DB=fresh(); state.pins={arch:{},infra:{}}; $('#modal').hidden=true; goScenario('draftA'); toast('Workspace reset to the seed.'); }
+  else if(a==='copyjson'){ const txt=$('#json').textContent; (navigator.clipboard?.writeText(txt)||Promise.reject()).then(()=>toast('Copied.'),()=>{ const r=document.createRange(); r.selectNodeContents($('#json')); getSelection().removeAllRanges(); getSelection().addRange(r); toast('Selected. Copy with Ctrl/Cmd+C.'); }); }
+  else if(a==='closemodal') $('#modal').hidden=true;
+});
+document.addEventListener('change',ev=>{
+  const t=ev.target;
+  if(t.id==='nm'){ const v=t.value.trim(); if(v) setField(state.sel,'name',v); }
+  if(t.id==='costIn'){ const e=G.ents[state.sel]; const v=t.value===''?null:Math.max(0,+t.value); setField(state.sel,'cost',{...e.cost,amount:v}); }
+  if(t.id==='cx'&&t.value){ link(state.sel,t.value); }
+  if(t.id==='scnSel'){ if(t.value==='__new'){ goScenario(newDraft('current')); toast('New draft. Changes here don’t touch reality.'); } else if(t.value==='__fork'){ const sc=scenario(state.scn); const id=newDraft(sc.parent,sc.name+' (copy)',clone(sc.ops)); scenario(id).workflows=clone(sc.workflows||[]); scenario(id).desc=sc.desc; goScenario(id); } else goScenario(t.value); }
+});
+$('#lenses').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setLens(b.dataset.lens); });
+$('#briefToggle').addEventListener('click',()=>$('#brief').classList.toggle('open'));
+$('#addBtn').addEventListener('click',e=>{ e.stopPropagation(); if(needDraft()) return; const m=$('#addMenu'); m.innerHTML=KIND_ORDER.filter(k=>k!=='person').map(k=>`<button data-kind="${k}">${glyph(k)}${KINDS[k].label}</button>`).join(''); m.hidden=!m.hidden; });
+document.addEventListener('pointerdown',e=>{ if(!e.target.closest('#addMenu,#addBtn')) $('#addMenu').hidden=true; if(!e.target.closest('.search')) $('#results').hidden=true; if(!e.target.closest('#srcPop,#srcBtn')) $('#srcPop').hidden=true; });
+$('#zIn').onclick=()=>zoomAt(1.25); $('#zOut').onclick=()=>zoomAt(.8); $('#zFit').onclick=fit;
+function zoomAt(f,cx,cy){ const r=svg.getBoundingClientRect(); cx??=r.width/2; cy??=r.height/2; const k=Math.max(.25,Math.min(2.5,view.k*f)); view.x=cx-(cx-view.x)*(k/view.k); view.y=cy-(cy-view.y)*(k/view.k); view.k=k; applyVP(); }
+svg.addEventListener('wheel',e=>{ e.preventDefault(); const r=svg.getBoundingClientRect();
+  if(e.ctrlKey||Math.abs(e.deltaY)>=Math.abs(e.deltaX)) zoomAt(Math.exp(-e.deltaY*(e.ctrlKey?0.01:0.0016)),e.clientX-r.left,e.clientY-r.top);
+  else { view.x-=e.deltaX; applyVP(); } },{passive:false});
+
+// pointer: pan background, drag nodes, drag ports to connect, pinch zoom
+const ptrs=new Map(); let drag=null, pinch=null;
+const toWorld=(cx,cy)=>{ const r=svg.getBoundingClientRect(); return {x:(cx-r.left-view.x)/view.k,y:(cy-r.top-view.y)/view.k}; };
+svg.addEventListener('pointerdown',e=>{
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch={d:Math.hypot(a.x-b.x,a.y-b.y),k:view.k}; drag=null; return; }
+  const port=e.target.closest('.port'), node=e.target.closest('.node'), zone=e.target.closest('.zone.host');
+  svg.setPointerCapture(e.pointerId);
+  if(port&&node){ drag={mode:'link',id:node.dataset.id}; return; }
+  if(node){ const w=toWorld(e.clientX,e.clientY), p=POS[node.dataset.id]; drag={mode:'node',id:node.dataset.id,ox:w.x-p.x,oy:w.y-p.y,sx:e.clientX,sy:e.clientY,moved:false}; return; }
+  drag={mode:'pan',sx:e.clientX,sy:e.clientY,vx:view.x,vy:view.y,moved:false,zone:zone?.dataset.zone}; svg.classList.add('panning');
+});
+svg.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&ptrs.size===2){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); const r=svg.getBoundingClientRect(); zoomAt((pinch.k*d/pinch.d)/view.k,(a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top); return; }
+  if(!drag) return;
+  if(drag.mode==='pan'){ const dx=e.clientX-drag.sx, dy=e.clientY-drag.sy; if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true; view.x=drag.vx+dx; view.y=drag.vy+dy; applyVP(); }
+  else if(drag.mode==='node'){ if(!drag.moved&&Math.abs(e.clientX-drag.sx)+Math.abs(e.clientY-drag.sy)<5) return; drag.moved=true; const w=toWorld(e.clientX,e.clientY); POS[drag.id]={x:w.x-drag.ox,y:w.y-drag.oy}; place(); }
+  else if(drag.mode==='link'){ const p=POS[drag.id], w=toWorld(e.clientX,e.clientY); gTmp.innerHTML=`<path class="tmpline" d="M${p.x+W} ${p.y+H/2} L${w.x} ${w.y}"/>`;
+    gNodes.querySelectorAll('.drop').forEach(n=>n.classList.remove('drop')); const over=document.elementFromPoint(e.clientX,e.clientY)?.closest('.node'); if(over&&over.dataset.id!==drag.id) over.classList.add('drop'); }
+});
+function endPtr(e){
+  ptrs.delete(e.pointerId); if(ptrs.size<2) pinch=null;
+  if(!drag) return; const d=drag; drag=null; svg.classList.remove('panning');
+  if(d.mode==='pan'&&!d.moved){ if(d.zone){ select(d.zone); } else if(state.sel||state.spot||state.iso){ state.sel=null; state.spot=null; state.iso=null; render(); } }
+  if(d.mode==='node'){ if(d.moved){ state.pins[LAY.kind][d.id]={...POS[d.id]}; } else select(d.id); }
+  if(d.mode==='link'){ gTmp.innerHTML=''; const over=document.elementFromPoint(e.clientX,e.clientY)?.closest('.node'); gNodes.querySelectorAll('.drop').forEach(n=>n.classList.remove('drop')); if(over&&over.dataset.id!==d.id) link(d.id,over.dataset.id); }
+}
+svg.addEventListener('pointerup',endPtr); svg.addEventListener('pointercancel',endPtr);
+svg.addEventListener('keydown',e=>{ const n=e.target.closest?.('.node'); if(n&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); select(n.dataset.id); } });
+
+// search
+const q=$('#q'), res=$('#results'); let resIdx=0;
+q.addEventListener('input',()=>{ const s=q.value.trim().toLowerCase(); if(!s){ res.hidden=true; return; } const m=G.list.filter(e=>(e.name+' '+KINDS[e.kind].label+' '+(e.summary||'')).toLowerCase().includes(s)).slice(0,8); resIdx=0;
+  res.innerHTML=m.length?m.map((e,i)=>`<button data-res="${e.id}" class="${i===0?'on':''}"><span>${esc(e.name)}</span><em>${esc(KINDS[e.kind].label)}</em></button>`).join(''):'<div style="padding:8px;color:var(--ink-3);font-size:13px">No match</div>'; res.hidden=false; });
+q.addEventListener('keydown',e=>{ const bs=[...res.querySelectorAll('button')]; if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); resIdx=(resIdx+(e.key==='ArrowDown'?1:-1)+bs.length)%bs.length; bs.forEach((b,i)=>b.classList.toggle('on',i===resIdx)); } if(e.key==='Enter'&&bs[resIdx]) bs[resIdx].click(); if(e.key==='Escape'){ q.blur(); res.hidden=true; } });
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,select,textarea')) return;
+  if(e.key==='/'){ e.preventDefault(); q.focus(); }
+  else if(e.key==='Escape'){ stopFlow(); state.sel=null; state.spot=null; state.iso=null; $('#modal').hidden=true; render(); }
+  else if(e.key==='f'||e.key==='F') fit();
+  else if(['1','2','3','4'].includes(e.key)) setLens(['arch','infra','econ','flow'][+e.key-1]);
+});
+
+// sources + data modal
+$('#srcBtn').onclick=()=>{ const p=$('#srcPop'); p.hidden=!p.hidden; p.innerHTML=`<h4>Data sources</h4><ul>
+  <li><i class="on"></i><div>Manual entry<span>This workspace. Everything on the map today.</span></div></li>
+  <li><i></i><div>Hermes controller<span>Not connected. Would report agents, skills, memory and jobs it runs.</span></div></li>
+  <li><i></i><div>VPS discovery agent<span>Not connected. Would report containers, services, MCP servers, health.</span></div></li>
+  <li><i></i><div>Billing &amp; usage import<span>Not connected. Would fill costs and quota headroom.</span></div></li></ul>
+  <p class="hint">Every source writes proposed changes into the same model. You approve them; the map redraws.</p>`; };
+$('#modelBtn').onclick=()=>{ const sc=state.scn==='current'?null:scenario(state.scn);
+  const doc={workspace:{version:DBV,entities:DB.base.entities.length,relations:DB.base.relations.length},current:DB.base,...(sc?{draft:{id:sc.id,name:sc.name,parent:sc.parent,ops:sc.ops,workflows:sc.workflows}}:{})};
+  const m=$('#modal'); m.hidden=false; m.innerHTML=`<div role="dialog" aria-label="Data model"><div class="row" style="justify-content:space-between"><h2>The map is drawn from this</h2><button class="icon-btn" data-act="closemodal" aria-label="Close">×</button></div>
+  <p>Atlas keeps the architecture as a typed graph. The canvas is one reading of it; APIs, Hermes or a discovery agent can write to the same graph later.</p>
+  <div class="layers"><div><b>Entities</b>${Object.keys(KINDS).length} kinds. Each carries where the fact came from.</div><div><b>Relations</b>${Object.keys(REL).length} typed links with allowed endpoints. Illegal links are refused.</div><div><b>Drafts</b>Change-sets over reality. Comparison is free.</div><div><b>View state</b>Lens, positions, focus. Never stored in the graph.</div></div>
+  <pre id="json">${esc(JSON.stringify(doc,null,2))}</pre>
+  <div class="row"><button class="btn" data-act="copyjson">Copy JSON</button><button class="btn ghost" data-act="reset">Reset workspace to seed</button></div></div>`; };
+$('#modal').addEventListener('click',e=>{ if(e.target.id==='modal') $('#modal').hidden=true; });
+
+let rz; addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(fit,120); });
+scnOptions(); render(); applyVP(); requestAnimationFrame(fit);
+if(document.fonts) document.fonts.ready.then(()=>fit());
+</script>
+</body>
+</html>

@@ -1062,9 +1062,10 @@ function renderInspector(){
 }
 function connectUI(e){
   const opts=[];
-  for(const t of G.alive){ if(t.id===e.id) continue; const inf=inferRel(e.kind,t.kind); if(!inf) continue;
-    const [f,to]=inf.swap?[t,e]:[e,t]; if(G.live.some(r=>r.type===inf.type&&r.from===f.id&&r.to===to.id)) continue;
-    opts.push(`<option value="${t.id}">${esc((inf.swap?'← '+REL[inf.type].verb:REL[inf.type].verb)+' · '+t.name)}</option>`); }
+  for(const t of G.alive){ if(t.id===e.id) continue;
+    for(const inf of inferRels(e.kind,t.kind)){
+      const [f,to]=inf.swap?[t,e]:[e,t]; if(G.live.some(r=>r.type===inf.type&&r.from===f.id&&r.to===to.id)) continue;
+      opts.push(`<option value="${t.id}|${inf.type}|${inf.swap?1:0}">${esc((inf.swap?'← '+REL[inf.type].verb:REL[inf.type].verb)+' · '+t.name)}</option>`); } }
   if(!opts.length) return '';
   return `<div class="row" style="margin-top:10px"><select id="cx" class="sel field" style="flex:1" aria-label="Connect to"><option value="">Connect to…</option>${opts.join('')}</select></div><p class="hint">Or drag from the node’s right edge onto another node.</p>`;
 }
@@ -1176,18 +1177,27 @@ function stopFlow(){ state.flow=null; gSig.innerHTML=''; }
 /* =====================================================================
    9. ACTIONS — every edit is an op on the active draft.
    ===================================================================== */
-function inferRel(fk,tk){
-  for(const [t,d] of Object.entries(REL)) if(d.from.includes(fk)&&d.to.includes(tk)) return {type:t,swap:false};
-  for(const [t,d] of Object.entries(REL)) if(d.from.includes(tk)&&d.to.includes(fk)) return {type:t,swap:true};
-  return null;
+function inferRels(fk,tk){
+  const out=[];
+  for(const [t,d] of Object.entries(REL)) if(d.from.includes(fk)&&d.to.includes(tk)) out.push({type:t,swap:false});
+  for(const [t,d] of Object.entries(REL)) if(d.from.includes(tk)&&d.to.includes(fk)&&!out.some(o=>o.type===t)) out.push({type:t,swap:true});
+  return out;
+}
+const inferRel=(fk,tk)=>inferRels(fk,tk)[0]||null;
+function chooseRel(a,b,cands){ // several relation types fit: let the person pick instead of guessing
+  const t=$('#toast'); clearTimeout(toast.h);
+  t.innerHTML=`<span>Link ${esc(a.name)} and ${esc(b.name)} as:</span> `+cands.map(c=>`<button class="btn" data-linkpick="${a.id}|${b.id}|${c.type}|${c.swap?1:0}">${esc(c.swap?'← '+REL[c.type].verb:REL[c.type].verb)}</button>`).join(' ');
+  t.className='ov toast'; t.hidden=false; toast.h=setTimeout(()=>t.hidden=true,9000);
 }
 function toast(msg,bad){ const t=$('#toast'); t.textContent=msg; t.className='ov toast'+(bad?' bad':''); t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true,3600); }
 const uid=p=>p+'_'+Math.random().toString(36).slice(2,8);
 function needDraft(){ if(state.scn==='current'){ toast('Reality is read-only. Open a draft to change the architecture.'); return true; } return false; }
-function link(fromId,toId){
+function link(fromId,toId,choice){
   if(needDraft()) return;
   const a=G.ents[fromId], b=G.ents[toId]; if(!a||!b||a.id===b.id) return;
-  const inf=inferRel(a.kind,b.kind);
+  const cands=inferRels(a.kind,b.kind);
+  if(cands.length>1&&!choice){ chooseRel(a,b,cands); return; }
+  const inf=choice||cands[0];
   if(!inf){ toast(REJECT[a.kind+'>'+b.kind]||`Atlas has no relationship from ${KINDS[a.kind].label.toLowerCase()} to ${KINDS[b.kind].label.toLowerCase()}.`,true); return; }
   const [f,t]=inf.swap?[b,a]:[a,b];
   if(G.live.some(r=>r.type===inf.type&&r.from===f.id&&r.to===t.id)){ toast('Already connected.'); return; }
@@ -1260,16 +1270,17 @@ document.addEventListener('click',ev=>{
   else if(a==='restore'){ const sc=scenario(state.scn); sc.ops=sc.ops.filter(o=>!(o.op==='remove'&&o.id===state.sel)); render(); }
   else if(a==='whatif') whatIf(state.sel);
   else if(a==='play'){ if(state.flow){ stopFlow(); render(); } else playFlow(); }
-  else if(a==='deldraft'){ const id=state.scn; DB.scenarios=DB.scenarios.filter(s=>s.id!==id&&s.parent!==id); goScenario('current'); }
+  else if(a==='deldraft'){ const drop=new Set([state.scn]); for(let grew=true;grew;){ grew=false; for(const s of DB.scenarios) if(!drop.has(s.id)&&drop.has(s.parent)){ drop.add(s.id); grew=true; } } DB.scenarios=DB.scenarios.filter(s=>!drop.has(s.id)); goScenario('current'); }
   else if(a==='reset'){ DB=fresh(); state.pins={arch:{},infra:{}}; $('#modal').hidden=true; goScenario('draftA'); toast('Workspace reset to the seed.'); }
   else if(a==='copyjson'){ const txt=$('#json').textContent; (navigator.clipboard?.writeText(txt)||Promise.reject()).then(()=>toast('Copied.'),()=>{ const r=document.createRange(); r.selectNodeContents($('#json')); getSelection().removeAllRanges(); getSelection().addRange(r); toast('Selected. Copy with Ctrl/Cmd+C.'); }); }
   else if(a==='closemodal') $('#modal').hidden=true;
 });
+document.addEventListener('click',ev=>{ const b=ev.target.closest('[data-linkpick]'); if(!b) return; const [f,t,type,swap]=b.dataset.linkpick.split('|'); $('#toast').hidden=true; link(f,t,{type,swap:swap==='1'}); });
 document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t.id==='nm'){ const v=t.value.trim(); if(v) setField(state.sel,'name',v); }
   if(t.id==='costIn'){ const e=G.ents[state.sel]; const v=t.value===''?null:Math.max(0,+t.value); setField(state.sel,'cost',{...e.cost,amount:v}); }
-  if(t.id==='cx'&&t.value){ link(state.sel,t.value); }
+  if(t.id==='cx'&&t.value){ const [to,type,swap]=t.value.split('|'); link(state.sel,to,{type,swap:swap==='1'}); }
   if(t.id==='scnSel'){ if(t.value==='__new'){ goScenario(newDraft('current')); toast('New draft. Changes here don’t touch reality.'); } else if(t.value==='__fork'){ const sc=scenario(state.scn); const id=newDraft(sc.parent,sc.name+' (copy)',clone(sc.ops)); scenario(id).workflows=clone(sc.workflows||[]); scenario(id).desc=sc.desc; goScenario(id); } else goScenario(t.value); }
 });
 $('#lenses').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setLens(b.dataset.lens); });
